@@ -1,5 +1,7 @@
 # Vision — approved by Lukas 2026-10-04 (decision D6)
 
+Amended the same day with D15: the goal, the competition model and ranks.
+
 Interprets `docs/original-brief.md` in the light of the 2026-10-04 research
 report (`docs/research/reports/Renewable energy tycoon game research.md`,
 "the report"; section names below refer to it). This is the direction:
@@ -73,7 +75,20 @@ thing and push back.
   and long-term contracts → merchant sales → cross-border trading and
   flexibility → power-to-X offtake. Each tier adds one revenue stream and one
   risk. Chores become delegable as the company grows: maintenance crews, a
-  trading desk, an auto-bidder, then portfolio policies.
+  trading desk, an auto-bidder, then portfolio policies. The company climbs
+  ranks it earns (D14, D15): farm → co-op partner → developer → utility →
+  regional champion → European major → a top rank. Each rank opens rights:
+  licences in new countries, tender prequalification, larger loans,
+  departments.
+- **The goal: lead Europe's energy transition (D15).** The aim is to be
+  number one by company value and by renewable output, in a league table
+  against three named rivals and everyone else. It is never to own the
+  whole market. The rivals race the player for sites, grid room and tenders,
+  announce their plans, and sell assets when they overbuild. Above about a
+  quarter of a zone's generation, the competition authority makes the
+  player sell capacity to grow further there, as it made DONG sell to
+  Vattenfall in 2006. Success pushes the company abroad, so the European map
+  is the progression.
 - **Revenue is energy delivered times the price it earned** — never nameplate
   capacity (Power Grid's "cities powered, not cities built").
 - **The merit-order ladder is a first-class screen:** each zone's supply stack
@@ -85,9 +100,10 @@ thing and push back.
   power-to-X that profit from everyone else's overbuilding. Spread across
   zones whose weather is not perfectly correlated, with moderate debt.
 - **Modes.** A 1990–2030 campaign in four era chapters with bronze/silver/gold
-  goals (pass with one, master with three); a sandbox running on to 2050;
-  2–3 crisis scenarios (the 2022 gas shock, the 2024 Dunkelflaute, storm
-  Lothar).
+  goals (pass with one, master with three); a sandbox running on to 2050,
+  whose shared mission is a fully renewable Europe, scored by the player's
+  share of it (D15); 2–3 crisis scenarios (the 2022 gas shock, the 2024
+  Dunkelflaute, storm Lothar). Later: scenarios won by buying out the rivals.
 - **Difficulty switches whole systems** (the Workers & Resources lesson), with
   each one also toggleable on its own:
 
@@ -112,6 +128,7 @@ thing and push back.
 | Leverage loops | Debt lowers valuation and invites takeover bids; interest-rate eras |
 | Subsidy farming | A per-country policy-risk meter (Italy's 2013 cap, Spain's retroactive cuts) |
 | Deliberately staying small | Never rewarded; catch-up comes as opportunity, never as a penalty for leading |
+| Monopoly in one zone | A competition-authority cap on any zone's share forces sales above it, so growth goes abroad (D15) |
 
 Dominance is caught by measurement, not argument: headless bot players with
 scripted strategies play many seeds nightly; if one wins everywhere, the

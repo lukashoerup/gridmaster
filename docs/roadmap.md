@@ -58,7 +58,9 @@ proven on one zone before Europe is built.
 
 ### Phase 3 — Vertical slice: would we show it to strangers?
 - **Build:** grow to 3–5 zones; the 1990–2010 chapters fully polished:
-  interface, tutorial, sound, rivals, events, interconnectors.
+  interface, tutorial, sound, rivals, events, interconnectors. The end goal
+  and how rivals compete follow D15
+  (`docs/reviews/2026-10-04-competition-and-goals.md`).
 - **Money decisions arise here** (each goes to Lukas first): commissioned
   capsule art, logo and trailer (AI-generated store art must be disclosed and
   draws reviews about AI instead of the game), licensed music; the $100 Steam
@@ -86,7 +88,7 @@ scenarios, German first among translations, tablets reassessed.
 | Time | A 1990–2030 campaign in four era chapters with medal goals; a sandbox running to 2050 | Most of the 2030–2060 speculative tree |
 | Simulation | Hourly zonal merit order; interconnector limits; scarcity pricing; negative bids; hydro water values; rule-based storage; tariff mode switching to market mode; feed-in tariff → premium → auctions and CfDs; fuel and carbon paths | 15-minute products, balancing and capacity markets, flow-based coupling |
 | Technology | Small and multi-MW onshore wind, rooftop and utility solar, fixed offshore wind, lithium batteries, run-of-river, reservoir and pumped hydro, large nuclear as a megaproject; **three experimental bets: liquid-air storage, power-to-X with offtake contracts, wave power with failure risk** | Floating wind, tidal, compressed-air and gravity storage, airborne wind, small modular reactors, energy islands, fusion |
-| Rivals and finance | Three AI rival archetypes competing for sites, auctions and grid slots; loans across interest-rate eras; a policy-risk meter | Stock market, takeovers, multiplayer |
+| Rivals and finance | Three AI rival archetypes competing for sites, auctions and grid slots; a league table, ranks and a competition-authority share cap per zone (D15); loans across interest-rate eras; a policy-risk meter | Stock market, takeovers, multiplayer |
 | Events and modes | About 15 dated historical events with randomised variants; 2–3 crisis scenarios; three difficulty presets plus toggles | Weekly seeded challenges; Workshop mods (designed for, shipped later) |
 | Platforms and languages | Windows and macOS on Steam; Linux and Steam Deck "Playable" if cheap; English, built for translation | Tablets; a controller-complete Deck "Verified" interface; German first, then more |
 | Presentation | Diagrammatic map and charts, one icon set; commissioned capsule art, logo and trailer; licensed music | 3D views, animated plants |
