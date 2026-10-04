@@ -16,6 +16,10 @@ Lukas decides.
 ## Contract (non-negotiable; inherited from the workbench)
 - Work on a branch, never directly on `main`. The bootstrap commit of
   2026-10-04 was the one exception: the repo was empty.
+- **Merge your own PR** when it is inside an approved task, CI is green and
+  nothing conflicts; never when it adds an unapproved dependency, changes a
+  decision or pillar, or costs money — ask Lukas in chat (D13). Lukas tests
+  and answers questions; he does not merge. Tell him what to test.
 - No work without a task file in `tasks/`. Done = tests green + affected docs
   updated + task file moved to `tasks/done/`. Commit per task (one revert).
 - Run tests before every commit; never commit on red tests. CI is the judge.

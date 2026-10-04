@@ -6,6 +6,29 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D13 — Sessions merge their own pull requests; Lukas tests and answers (Lukas, 2026-10-04)
+> "But do I have to merge the PRs? I would rather spend my time testing."
+> "And answering questions you ask me here."
+
+Lukas's role in this repo is **testing** what sessions build and
+**answering the questions they ask in chat**. He does not merge.
+
+A session merges its own pull request into `main` when all of these hold:
+- the work is inside an approved task file (or records Lukas's own answers);
+- CI is green on the PR's head commit (once CI exists) and there is no
+  merge conflict;
+- the PR description says what changed and, in plain language, what Lukas
+  should test, if anything.
+
+A session never merges, and asks Lukas in chat instead, when the PR adds a
+dependency not already approved (D7), changes a pillar or a decision beyond
+recording his answers, or commits money. The PR stays the record and a
+revert is one click. Astra reviews stay optional and never block (workbench
+`docs/roles.md`).
+
+Scope: this repo only. Elsewhere — erhvervsklubben deploys from `main` —
+the workbench's own rules still apply.
+
 D6–D12 were answered in chat on 2026-10-04: D6–D9 after the research
 summary, D10–D12 after the prototype design. Each time Lukas chose the
 recommended option as offered.
