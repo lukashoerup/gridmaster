@@ -17,7 +17,7 @@ import { EVENTS } from './events';
 import { ZONE, type MarketProvider, type MarketYear, type PlayerCapacity } from './market';
 import { cents, groupThousands, monthlyPayment } from './money';
 import { AREAS, FARM, SITES, gridRoomMw, siteById, type Site } from './sites';
-import type { Asset, Card, GameState, Ledger, Loan, Medal, Notice, Outcome, Regime, Tone, YearReport } from './state';
+import type { Asset, Card, GameState, Ledger, Loan, Medal, Notice, OfferId, Outcome, Regime, Tone, YearReport } from './state';
 import {
   BARN_PANELS_MW,
   CLAIM_NOTICE_MONTHS,
@@ -31,8 +31,12 @@ import {
   END_YEAR,
   FARM_ROOF_MW,
   FARM_USE_MWH,
+  FIRESALE_AGE_YEARS,
+  FIRESALE_PRICE_EUR,
+  FIRESALE_UNITS,
   HOUSEHOLD_MWH,
   INTEREST_RATE,
+  LANDOWNER_FEE_EUR,
   LOAN_SHARE,
   LOAN_TERMS_YEARS,
   MEDAL_BRONZE_EUR,
@@ -41,6 +45,7 @@ import {
   MEDAL_SILVER_EUR,
   MIN_RATE,
   PREMIUMS,
+  REFINANCE_FEE_SHARE,
   RESTRUCTURE_BUFFER_MONTHS,
   RESTRUCTURE_FEE_SHARE,
   RESTRUCTURE_FEE_YEARS,
@@ -51,6 +56,8 @@ import {
   START_CASH_EUR,
   START_YEAR,
   TARIFF_YEARS,
+  TUNED_INCOME_FACTOR,
+  TUNED_OFFERS,
   WIND_AGEING_PER_YEAR,
   WIND_TARIFF,
 } from './tuning';
@@ -151,7 +158,7 @@ export function windRegime(state: GameState, onlineAt: number): RegimeTerms {
 // ---------------------------------------------------------------------------
 // New game
 
-export function newGame(seed: number, inputs: WorldInputs): GameState {
+export function newGame(seed: number, inputs: WorldInputs, options: { readonly tuned?: boolean } = {}): GameState {
   const zone = inputs.zones.find((z) => z.id === ZONE);
   if (zone === undefined) throw new Error(`the inputs have no ${ZONE} zone`);
   const rng = Rng.fromSeed(seed >>> 0, 0x51735);
@@ -195,6 +202,7 @@ export function newGame(seed: number, inputs: WorldInputs): GameState {
     over: null,
     capacityLog: {},
   };
+  if (options.tuned === true) state.tuned = { incomeFactor: TUNED_INCOME_FACTOR, offersFired: [], readyPermitUntil: -1 };
   const barn = MODELS.roof10;
   const barnMwh = BARN_PANELS_MW * barn.meanCf * FARM.sun * 8760;
   addAsset(state, {
@@ -217,6 +225,11 @@ export function newGame(seed: number, inputs: WorldInputs): GameState {
       'You own a farm in the middle of Jutland, €150,000 in the bank, and 10 kWp of solar panels on the barn roof. On sunny days they cover part of the farm’s own power bill: a trickle of money.',
       'The real opportunity is the wind. The utility must buy wind power at a fixed price, €80/MWh, for ten years from the day a turbine starts. Choose a site on the map to build your first turbine. Windier sites earn more; permits take months; the bank lends up to 80% of the cost, at 8% interest today.',
       'Nothing happens until you press play. Every 31 December your annual report shows how the year went. The chapter ends on 31 December 2025.',
+      ...(state.tuned === undefined
+        ? []
+        : [
+            `Test version: everything your plants earn is multiplied by ${TUNED_INCOME_FACTOR}, and three offers will come your way over the years. Medals here do not compare with a normal game.`,
+          ]),
     ],
   });
   state.cashStartCents = state.cashCents;
@@ -446,7 +459,9 @@ export function preview(state: GameState, market: MarketYear, req: BuildRequest)
   const monthlyPaymentCents = loanCents > 0 ? monthlyPayment(loanCents, ratePct, loanYears * 12) : 0;
   if (equityCents > state.cashCents) problems.push(`You need ${eur(equityCents)} in cash; you have ${eur(Math.max(0, state.cashCents))}.`);
 
-  const permitMonths = site === null ? 0 : AREAS[site.area].permitMonths;
+  // Tuned mode only: the landowner's ready site skips the permit wait once.
+  const readyPermit = site !== null && state.tuned !== undefined && t <= state.tuned.readyPermitUntil;
+  const permitMonths = site === null || readyPermit ? 0 : AREAS[site.area].permitMonths;
   const permitDoneAt = dayCeil(t + permitMonths * HOURS_PER_MONTH);
   const onlineAt = dayCeil(permitDoneAt + model.buildMonths * HOURS_PER_MONTH);
   const factor = model.kind === 'wind' ? (site?.wind ?? 1) : (site?.sun ?? FARM.sun);
@@ -537,6 +552,7 @@ export function build(state: GameState, market: MarketYear, req: BuildRequest): 
   });
   state.cashCents -= p.equityCents;
   state.ledger.investedCents += p.costCents;
+  if (site !== null && state.tuned !== undefined && state.t <= state.tuned.readyPermitUntil) state.tuned.readyPermitUntil = -1;
   if (p.loanCents > 0) {
     const loan: Loan = {
       id: state.nextId++,
@@ -812,6 +828,7 @@ function daily(state: GameState): void {
   if (mi - 1 > state.closedMonth && state.t > 0) closeMonth(state, state.t);
   updateAssets(state);
   fireEvents(state);
+  if (state.tuned !== undefined) fireTunedOffers(state);
   updateClaims(state);
   checkCash(state);
 }
@@ -852,6 +869,7 @@ function stepHour(state: GameState, market: MarketYear): void {
       default:
         rev = out * price;
     }
+    if (state.tuned !== undefined) rev *= state.tuned.incomeFactor;
     const revExact = a.revenueCarry + rev * 100;
     const revCents = Math.round(revExact);
     a.revenueCarry = revExact - revCents;
@@ -1022,5 +1040,115 @@ export function dismissCard(state: GameState): Card | undefined {
 /** Date label of the game's current hour. */
 export function nowLabel(state: GameState): string {
   return dateLabel(state.t);
+}
+
+// ---------------------------------------------------------------------------
+// Round 1's tuned comparison mode (tasks/2026-10-04-fun-core-toy.md part c)
+
+const OFFER_TEXT: Readonly<Record<OfferId, { readonly title: string; readonly body: readonly string[] }>> = {
+  landowner: {
+    title: 'A landowner offers a ready site',
+    body: [
+      `A farmer has done the paperwork for a turbine site. Pay ${eur(cents(LANDOWNER_FEE_EUR))} now and your next turbine, ordered within a year, needs no permit wait.`,
+    ],
+  },
+  refinance: {
+    title: 'The bank offers to refinance',
+    body: ['Interest rates have fallen. The bank will move every loan to today’s rate, over the months each has left, for a fee of 1% of what you owe.'],
+  },
+  firesale: {
+    title: 'A fire sale: a bankrupt co-op’s turbines',
+    body: [
+      `A wind co-op on the west coast has gone bust. Its two 600 kW turbines, about twelve years old, are yours for ${eur(cents(FIRESALE_PRICE_EUR))} in cash. Banks are not lending for it.`,
+    ],
+  },
+};
+
+function fireTunedOffers(state: GameState): void {
+  const tuned = state.tuned;
+  if (tuned === undefined) return;
+  for (const o of TUNED_OFFERS) {
+    if (tuned.offersFired.includes(o.id) || state.t < dateHour(o.year, o.month, 1)) continue;
+    tuned.offersFired.push(o.id);
+    const text = OFFER_TEXT[o.id];
+    card(state, { kind: 'offer', title: text.title, body: text.body, offer: o.id });
+  }
+}
+
+/**
+ * Answer the offer card at the front of the queue. Accepting may fail (not
+ * enough cash, no room), in which case the card stays and the reason is
+ * returned; declining always closes it.
+ */
+export function answerOffer(state: GameState, accept: boolean): { readonly ok: boolean; readonly message: string } {
+  const c = state.cards[0];
+  if (c === undefined || c.kind !== 'offer' || c.offer === undefined || state.tuned === undefined) return { ok: false, message: 'No offer is waiting.' };
+  if (!accept) {
+    state.cards.shift();
+    notice(state, `Declined: ${c.title.toLowerCase()}.`, 'info');
+    return { ok: true, message: 'Declined.' };
+  }
+  const t = state.t;
+  let message: string;
+  switch (c.offer) {
+    case 'landowner': {
+      const fee = cents(LANDOWNER_FEE_EUR);
+      if (state.cashCents < fee) return { ok: false, message: `You need ${eur(fee)} in cash.` };
+      state.cashCents -= fee;
+      state.tuned.readyPermitUntil = t + HOURS_PER_YEAR;
+      message = 'Your next turbine, ordered within a year, needs no permit wait.';
+      break;
+    }
+    case 'refinance': {
+      const rate = interestRate(t);
+      let owed = 0;
+      let moved = 0;
+      state.loans = state.loans.map((l) => {
+        const left = l.months - l.monthsPaid;
+        if (l.balanceCents <= 0 || left <= 0 || rate >= l.ratePct) return l;
+        owed += l.balanceCents;
+        moved++;
+        return { ...l, principalCents: l.balanceCents, ratePct: rate, months: left, monthsPaid: 0, paymentCents: monthlyPayment(l.balanceCents, rate, left) };
+      });
+      const fee = Math.round(owed * REFINANCE_FEE_SHARE);
+      state.cashCents -= fee;
+      message = moved === 0 ? 'None of your loans was dearer than today’s rate.' : `${moved} loan${moved === 1 ? '' : 's'} moved to ${rate.toFixed(1)}% for a fee of ${eur(fee)}.`;
+      break;
+    }
+    case 'firesale': {
+      const price = cents(FIRESALE_PRICE_EUR);
+      if (state.cashCents < price) return { ok: false, message: `You need ${eur(price)} in cash.` };
+      const model = MODELS.w600;
+      const mw = FIRESALE_UNITS * model.unitMw;
+      const site = [...SITES]
+        .sort((a, b) => (a.area === 'west' ? 0 : 1) - (b.area === 'west' ? 0 : 1) || b.wind - a.wind)
+        .find((s) => siteRoomMw(state, s.id) >= mw - 1e-9 && areaRoomMw(state, s.area) >= mw - 1e-9);
+      if (site === undefined) return { ok: false, message: 'No site has room for the two turbines.' };
+      const onlineAt = Math.max(0, t - FIRESALE_AGE_YEARS * HOURS_PER_YEAR);
+      const price0 = state.lastMarket?.meanPrice ?? 30;
+      const mwh = mw * model.meanCf * site.wind * 8760;
+      const n = state.assets.filter((a) => a.siteId === site.id).length + 1;
+      state.cashCents -= price;
+      state.ledger.investedCents += price;
+      addAsset(state, {
+        name: `${site.name} ${n}`,
+        model,
+        units: FIRESALE_UNITS,
+        site,
+        orderedAt: onlineAt,
+        permitDoneAt: onlineAt,
+        onlineAt,
+        costCents: price,
+        terms: windRegime(state, onlineAt),
+        expectedNetCents: cents(mwh * price0 - mw * 1000 * model.omPerKw),
+        expectedPrice: price0,
+      });
+      message = `Two 600 kW turbines at ${site.name} are yours.`;
+      break;
+    }
+  }
+  state.cards.shift();
+  notice(state, message, 'good');
+  return { ok: true, message };
 }
 

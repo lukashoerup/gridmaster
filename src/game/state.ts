@@ -92,13 +92,30 @@ export interface Notice {
   readonly tone: Tone;
 }
 
-export type CardKind = 'welcome' | 'event' | 'annual' | 'cash' | 'restructured' | 'gameover' | 'end';
+export type CardKind = 'welcome' | 'event' | 'annual' | 'cash' | 'restructured' | 'gameover' | 'end' | 'offer';
+
+/** The three stub offers of round 1's tuned comparison mode (tasks/2026-10-04-fun-core-toy.md part c). */
+export type OfferId = 'landowner' | 'refinance' | 'firesale';
+
+/**
+ * Round 1's comparison mode, `play.html?tuned=1`: slice 1 with its income
+ * multiplied and three offers added, to test whether the old core was broken
+ * or only its numbers. Absent in a normal game, which is unchanged.
+ */
+export interface Tuned {
+  readonly incomeFactor: number;
+  offersFired: OfferId[];
+  /** Until this hour the next turbine skips its permit wait (the landowner's offer). */
+  readyPermitUntil: number;
+}
 
 export interface Card {
   readonly kind: CardKind;
   readonly title: string;
   readonly body: readonly string[];
   readonly year?: number;
+  /** For an offer card: which offer it is. */
+  readonly offer?: OfferId;
 }
 
 export interface Ledger {
@@ -196,4 +213,6 @@ export interface GameState {
   over: Outcome | null;
   /** The player's capacity the market was simulated with, by year: replayed when a save is resumed. */
   capacityLog: Record<string, PlayerCapacity>;
+  /** Round 1's tuned comparison mode; absent in a normal game. */
+  tuned?: Tuned;
 }

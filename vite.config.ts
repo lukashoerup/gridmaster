@@ -9,7 +9,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
-      input: { index: 'index.html', play: 'play.html', toy: 'toy.html' },
+      input: { index: 'index.html', play: 'play.html', toy: 'toy.html', board: 'board.html' },
     },
     target: 'es2022',
     sourcemap: false,
