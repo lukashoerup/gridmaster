@@ -2,7 +2,7 @@
   "name": "gridmaster",
   "version": "0.1.0",
   "private": true,
-  "description": "Renewable-energy tycoon game: Phase 1 market simulation core and explorer page.",
+  "description": "Renewable-energy tycoon game: the market simulation core, its explorer page, and the one-zone prototype.",
   "type": "module",
   "scripts": {
     "dev": "vite",

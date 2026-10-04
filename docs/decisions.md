@@ -6,6 +6,24 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D16 — Build the Phase 2 prototype now, in parallel with Phase 1 (Lukas, 2026-10-04)
+> "I've decided to build the Phase 2 one-zone prototype (Western Denmark,
+> 1995–2025) now, in parallel, on top of the existing market simulation and
+> its placeholder data. Real data comes later from another session."
+
+- The one-zone prototype (`docs/design/one-zone-prototype.md`) is built
+  now, slice by slice, without waiting for Phase 1's gate. Task:
+  `tasks/2026-10-04-phase2-one-zone-prototype.md`.
+- It runs on the Phase 1 simulation core and its placeholder inputs; when
+  Phase 1 part (b) replaces them with real data, the prototype picks the
+  real data up through the same loader.
+- Phase 1 (real data, calibration, its gate) continues in its own sessions.
+  The prototype changes the simulation core and the explorer page only by
+  small additions, each named in its pull request.
+- The first slice: the farm with panels on the barn, wind turbines on
+  sites, fixed tariffs until mid-1999 then the hourly market, money and
+  loans, speed controls, the annual report.
+
 ### D15 — The goal: lead Europe's energy transition (Lukas, 2026-10-04)
 > "A"
 

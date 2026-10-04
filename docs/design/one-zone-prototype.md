@@ -166,6 +166,13 @@ are worth more. A contract counts as earned price in every score.
 - Cash; loans of up to 80% of a project's cost [tuning], repaid in equal
   instalments over 10–15 years, at the era's interest rate (§6); in autumn
   2008 rates rise and the loan share drops to 60% for two years.
+  Instalments start once the asset runs (slice 1).
+- **Company loan** (the Finance screen's [Borrow], added in slice 1): the
+  bank lends against the operating assets until all debt together reaches
+  60% of their value [tuning], at the era's rate plus 1 point [tuning]. Without
+  it, a player could not afford a 2 MW turbine's share once the small
+  turbines leave the catalogue in 2003, and the middle of the game stalled
+  in the bot runs (`tasks/2026-10-04-phase2-one-zone-prototype.md`).
 - **Company value** = cash − debt + the value of each asset, where an asset's
   value is its trailing three-year net cash flow times an annuity factor over
   its remaining life at 7% [tuning]. A cannibalised asset therefore loses
@@ -472,7 +479,7 @@ and playtests. The Phase 1 toy's calibration replaces the price levels.
 | Interest rate | ~8% (1995) → 6% (2000) → 4% (2005) → 3% (2010) → 1% (2015) → 0.5% (2020) → 4% (2023) | [unverified] |
 | 1990s wind tariff | ~€80/MWh, fixed | [unverified]: Danish 85%-of-consumer-price rule plus subsidies [notes] |
 | Rooftop solar value | Avoided retail price, ~€130/MWh (1995) rising with taxes | [unverified] |
-| 1999–2008 wind premium | ~€13/MWh on top of the hourly price | [tuning] |
+| 1999–2008 wind premium | ~€25/MWh on top of the hourly price for turbines online July 1999–2002 (the real ones got a fixed settlement price of about €58/MWh [unverified]), ~€13/MWh for 2003–07; each for 22,000 full-load hours (slice 1; was ~€13 for all) | [tuning] |
 | 2008–2017 wind premium | ~€33/MWh for 22,000 full-load hours | [unverified] |
 | Wind turbine cost | ~€1,000/kW (1995) → ~€1,000/kW (2024: $1,041/kW) with a mid-2000s bump | [report] for 2024; rest [unverified] |
 | Wind capacity factor | 22% (1995 turbines) → 35% (2020s turbines), × site rating | [tuning]; Vindeby offshore 22% [report] |
@@ -482,7 +489,7 @@ and playtests. The Phase 1 toy's calibration replaces the price levels.
 | Battery | 88% round trip; wear €/MWh cycled [tuning] | [tuning] |
 | O&M per year | Wind €25/kW; solar €10/kW; battery €5/kWh | [tuning] |
 | Lifetimes | Wind 20–25 years; solar 30 (−0.5%/yr); battery 15 years or a cycle limit | [tuning] |
-| Loan | 80% of cost, 10–15 years; 60% in 2008–2010 | [tuning] |
+| Loan | 80% of cost, 10 or 15 years; 60% in 2008–2010; company loan up to 60% of operating assets' value, +1 point | [tuning] |
 | Company levels (§4.9) | 2: 2 MW · 3: 25 MW and €10m · 4: 150 MW and €60m | [tuning] |
 | Level perks | Loans 0.5 / 1 point below the era's rate (floor 0.25%); permits −15% from level 3 | [tuning] |
 | Offers (§4.10) | One per 8–12 game months; one open at a time | [tuning] |
