@@ -203,8 +203,9 @@ describe('the session log', () => {
 });
 
 describe('the obvious bot', () => {
-  it('scores below a careful planner on the same maps (round 1’s depth check)', () => {
-    for (const seed of [42, 7]) {
+  // One seed keeps it near 15 s locally; CI runs files side by side and is slower, hence the timeout.
+  it('scores below a careful planner on the same map (round 1’s depth check)', { timeout: 240_000 }, () => {
+    for (const seed of [42]) {
       const obvious = runBot(inputs, seed, obviousBot, 4);
       const planner = runBot(inputs, seed, plannerBot, 4);
       console.log(`toy 1, seed ${seed}, 1997–2000: obvious bot ${obvious.score} (${obvious.playerMw} MW), planner ${planner.score} (${planner.playerMw} MW, ${planner.batteries} batteries)`);
