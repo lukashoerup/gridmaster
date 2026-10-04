@@ -1,0 +1,374 @@
+{
+  "status": "placeholder, unverified",
+  "note": "Renewable support that is only paid while producing, by zone, technology and year. premiumPerMwh is how far below zero the inflexible (fixed-tariff) part of the fleet keeps bidding before it switches off; flexShare is the share of the fleet that switches off at slightly negative prices (merchant plants and plants on market premiums). The shapes echo the German EEG, the Danish premiums and the Spanish RD 661/2007 era and its 2013 cut, but every number is invented tuning; real tariff histories are needed in part (b)-(c). Capped well below the historical feed-in tariffs for solar so the toy does not hit the price floor.",
+  "units": {
+    "premiumPerMwh": "EUR/MWh by year",
+    "flexShare": "share 0..1 by year"
+  },
+  "support": {
+    "DK1": {
+      "wind": {
+        "premiumPerMwh": [
+          [
+            1995,
+            50
+          ],
+          [
+            1999,
+            50
+          ],
+          [
+            2000,
+            30
+          ],
+          [
+            2003,
+            13
+          ],
+          [
+            2008,
+            33
+          ],
+          [
+            2016,
+            30
+          ],
+          [
+            2018,
+            20
+          ],
+          [
+            2020,
+            10
+          ],
+          [
+            2025,
+            5
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0
+          ],
+          [
+            2003,
+            0.4
+          ],
+          [
+            2010,
+            0.6
+          ],
+          [
+            2016,
+            0.8
+          ],
+          [
+            2020,
+            0.9
+          ],
+          [
+            2025,
+            0.95
+          ]
+        ]
+      },
+      "solar": {
+        "premiumPerMwh": [
+          [
+            1995,
+            0
+          ],
+          [
+            2012,
+            60
+          ],
+          [
+            2016,
+            40
+          ],
+          [
+            2020,
+            15
+          ],
+          [
+            2025,
+            5
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0
+          ],
+          [
+            2015,
+            0.2
+          ],
+          [
+            2020,
+            0.6
+          ],
+          [
+            2025,
+            0.85
+          ]
+        ]
+      }
+    },
+    "DE": {
+      "wind": {
+        "premiumPerMwh": [
+          [
+            1995,
+            85
+          ],
+          [
+            2000,
+            90
+          ],
+          [
+            2005,
+            80
+          ],
+          [
+            2010,
+            65
+          ],
+          [
+            2014,
+            50
+          ],
+          [
+            2017,
+            35
+          ],
+          [
+            2020,
+            25
+          ],
+          [
+            2023,
+            20
+          ],
+          [
+            2025,
+            15
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0
+          ],
+          [
+            2011,
+            0.05
+          ],
+          [
+            2012,
+            0.3
+          ],
+          [
+            2016,
+            0.5
+          ],
+          [
+            2020,
+            0.75
+          ],
+          [
+            2025,
+            0.9
+          ]
+        ]
+      },
+      "solar": {
+        "premiumPerMwh": [
+          [
+            1995,
+            0
+          ],
+          [
+            2000,
+            120
+          ],
+          [
+            2005,
+            120
+          ],
+          [
+            2010,
+            100
+          ],
+          [
+            2012,
+            80
+          ],
+          [
+            2015,
+            60
+          ],
+          [
+            2018,
+            50
+          ],
+          [
+            2020,
+            45
+          ],
+          [
+            2025,
+            40
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0
+          ],
+          [
+            2012,
+            0.1
+          ],
+          [
+            2016,
+            0.3
+          ],
+          [
+            2020,
+            0.55
+          ],
+          [
+            2023,
+            0.7
+          ],
+          [
+            2025,
+            0.8
+          ]
+        ]
+      }
+    },
+    "NO": {
+      "wind": {
+        "premiumPerMwh": [
+          [
+            1995,
+            0
+          ],
+          [
+            2012,
+            15
+          ],
+          [
+            2020,
+            8
+          ],
+          [
+            2022,
+            0
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0.5
+          ],
+          [
+            2020,
+            0.9
+          ]
+        ]
+      },
+      "solar": {
+        "premiumPerMwh": [
+          [
+            1995,
+            0
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0.5
+          ]
+        ]
+      }
+    },
+    "ES": {
+      "wind": {
+        "premiumPerMwh": [
+          [
+            1995,
+            30
+          ],
+          [
+            2004,
+            40
+          ],
+          [
+            2008,
+            45
+          ],
+          [
+            2013,
+            20
+          ],
+          [
+            2014,
+            0
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0.3
+          ],
+          [
+            2014,
+            0.9
+          ]
+        ]
+      },
+      "solar": {
+        "premiumPerMwh": [
+          [
+            1995,
+            0
+          ],
+          [
+            2007,
+            100
+          ],
+          [
+            2010,
+            100
+          ],
+          [
+            2013,
+            60
+          ],
+          [
+            2014,
+            0
+          ]
+        ],
+        "flexShare": [
+          [
+            1995,
+            0.2
+          ],
+          [
+            2014,
+            0.7
+          ],
+          [
+            2020,
+            0.9
+          ]
+        ]
+      }
+    }
+  }
+}

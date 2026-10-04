@@ -22,4 +22,4 @@ it is committed. Installed libraries are covered by the dependency approval in
 ## Register
 | Item | Source | Licence | Shipped or calibration-only | Attribution text | Added |
 |---|---|---|---|---|---|
-| _(nothing yet)_ | | | | | |
+| Placeholder simulation inputs, `data/placeholder/*.json` | Invented, or approximated from general knowledge, by the Phase 1 session; no third-party dataset was copied or derived from | Original to this repo | Neither: development placeholders, to be replaced by licence-checked data in the Phase 1 task's part (b) | — | 2026-10-04 |

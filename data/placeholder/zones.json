@@ -1,0 +1,429 @@
+{
+  "status": "placeholder, unverified",
+  "note": "Zone definitions for the Phase 1 market toy. Every number is an approximation from general knowledge, invented to make the simulation run, and is to be replaced by real data (Eurostat/Ember demand, ENTSO-E load shapes) in part (b) of the task. Dates: DK1 joined Nord Pool 1999-07-01; the German LPX opened 2000-06-15; Nord Pool 1996-01-01; the Spanish market 1998-01-01. Negative prices: Germany from autumn 2008, DK1 and NO from autumn 2009, Spain's date is a guess. Price floor/cap follow today's EPEX harmonised limits (-500/+3000), placeholder for earlier years. Hydro: inflowTwh is the reservoir inflow only (run-of-river output is separate, so reservoir inflow plus run-of-river is Norway's total hydro); waterValueRefFactor multiplies the reference price (trailing 30-day price of the linked zones; the cheapest thermal cost for Spain, which has no link); waterValueSlope sets how fast the water value rises as the reservoir falls below its monthly target.",
+  "units": {
+    "latitude": "degrees north",
+    "priceFloor": "EUR/MWh",
+    "priceCap": "EUR/MWh",
+    "regulatedPrice": "EUR/MWh by year",
+    "demandTwh": "TWh by year",
+    "reservoirTwh": "TWh",
+    "inflowTwh": "TWh by year"
+  },
+  "zones": [
+    {
+      "id": "DK1",
+      "name": "Western Denmark",
+      "latitude": 56.0,
+      "marketOpen": "1999-07-01",
+      "negativePricesFrom": "2009-10-01",
+      "priceFloor": -500,
+      "priceCap": 3000,
+      "reserveFraction": 0.12,
+      "regulatedPrice": [
+        [
+          1995,
+          32
+        ],
+        [
+          1999,
+          30
+        ]
+      ],
+      "demandTwh": [
+        [
+          1995,
+          19.5
+        ],
+        [
+          2000,
+          20.6
+        ],
+        [
+          2005,
+          21.3
+        ],
+        [
+          2008,
+          21.5
+        ],
+        [
+          2010,
+          21.0
+        ],
+        [
+          2015,
+          20.6
+        ],
+        [
+          2020,
+          20.8
+        ],
+        [
+          2023,
+          21.5
+        ],
+        [
+          2025,
+          23.0
+        ]
+      ],
+      "demandShape": {
+        "seasonalAmplitude": 0.12,
+        "summerBump": 0.0,
+        "weekendFactor": 0.88,
+        "dailyNoise": 0.03
+      },
+      "wind": {
+        "meanCf": 0.3,
+        "seasonalAmplitude": 0.3,
+        "dailySigma": 0.75,
+        "hourlySigma": 0.25,
+        "yearSigma": 0.07
+      },
+      "solar": {
+        "meanCf": 0.11,
+        "cloudSeasonal": 0.6,
+        "yearSigma": 0.05
+      },
+      "hydro": null
+    },
+    {
+      "id": "DE",
+      "name": "Germany",
+      "latitude": 51.0,
+      "marketOpen": "2000-06-15",
+      "negativePricesFrom": "2008-10-01",
+      "priceFloor": -500,
+      "priceCap": 3000,
+      "reserveFraction": 0.12,
+      "regulatedPrice": [
+        [
+          1995,
+          40
+        ],
+        [
+          2000,
+          38
+        ]
+      ],
+      "demandTwh": [
+        [
+          1995,
+          500
+        ],
+        [
+          2000,
+          530
+        ],
+        [
+          2005,
+          555
+        ],
+        [
+          2008,
+          560
+        ],
+        [
+          2009,
+          525
+        ],
+        [
+          2010,
+          555
+        ],
+        [
+          2015,
+          540
+        ],
+        [
+          2019,
+          525
+        ],
+        [
+          2020,
+          500
+        ],
+        [
+          2021,
+          515
+        ],
+        [
+          2022,
+          500
+        ],
+        [
+          2023,
+          480
+        ],
+        [
+          2025,
+          490
+        ]
+      ],
+      "demandShape": {
+        "seasonalAmplitude": 0.08,
+        "summerBump": 0.0,
+        "weekendFactor": 0.86,
+        "dailyNoise": 0.025
+      },
+      "wind": {
+        "meanCf": 0.21,
+        "seasonalAmplitude": 0.3,
+        "dailySigma": 0.65,
+        "hourlySigma": 0.2,
+        "yearSigma": 0.06
+      },
+      "solar": {
+        "meanCf": 0.11,
+        "cloudSeasonal": 0.6,
+        "yearSigma": 0.05
+      },
+      "hydro": null
+    },
+    {
+      "id": "NO",
+      "name": "Norway",
+      "latitude": 61.0,
+      "marketOpen": "1996-01-01",
+      "negativePricesFrom": "2009-10-01",
+      "priceFloor": -500,
+      "priceCap": 3000,
+      "reserveFraction": 0.12,
+      "regulatedPrice": [
+        [
+          1995,
+          15
+        ]
+      ],
+      "demandTwh": [
+        [
+          1995,
+          112
+        ],
+        [
+          2000,
+          120
+        ],
+        [
+          2005,
+          123
+        ],
+        [
+          2010,
+          128
+        ],
+        [
+          2015,
+          128
+        ],
+        [
+          2020,
+          130
+        ],
+        [
+          2023,
+          133
+        ],
+        [
+          2025,
+          137
+        ]
+      ],
+      "demandShape": {
+        "seasonalAmplitude": 0.22,
+        "summerBump": 0.0,
+        "weekendFactor": 0.92,
+        "dailyNoise": 0.035
+      },
+      "wind": {
+        "meanCf": 0.33,
+        "seasonalAmplitude": 0.25,
+        "dailySigma": 0.7,
+        "hourlySigma": 0.22,
+        "yearSigma": 0.07
+      },
+      "solar": {
+        "meanCf": 0.09,
+        "cloudSeasonal": 0.8,
+        "yearSigma": 0.05
+      },
+      "hydro": {
+        "reservoirTwh": 85,
+        "inflowTwh": [
+          [
+            1995,
+            100
+          ],
+          [
+            2005,
+            105
+          ],
+          [
+            2015,
+            112
+          ],
+          [
+            2025,
+            118
+          ]
+        ],
+        "initialFill": 0.62,
+        "minFill": 0.05,
+        "targetFill": [
+          0.62,
+          0.52,
+          0.42,
+          0.34,
+          0.36,
+          0.56,
+          0.7,
+          0.78,
+          0.82,
+          0.85,
+          0.8,
+          0.72
+        ],
+        "inflowShape": [
+          0.4,
+          0.35,
+          0.35,
+          0.7,
+          1.9,
+          2.2,
+          1.6,
+          1.35,
+          1.3,
+          1.15,
+          0.75,
+          0.5
+        ],
+        "yearSigma": 0.15,
+        "waterValueSlope": 4.0,
+        "waterValueRefFactor": 0.9
+      }
+    },
+    {
+      "id": "ES",
+      "name": "Spain",
+      "latitude": 40.0,
+      "marketOpen": "1998-01-01",
+      "negativePricesFrom": "2024-01-01",
+      "priceFloor": -500,
+      "priceCap": 3000,
+      "reserveFraction": 0.12,
+      "regulatedPrice": [
+        [
+          1995,
+          40
+        ]
+      ],
+      "demandTwh": [
+        [
+          1995,
+          160
+        ],
+        [
+          2000,
+          200
+        ],
+        [
+          2005,
+          250
+        ],
+        [
+          2008,
+          268
+        ],
+        [
+          2010,
+          262
+        ],
+        [
+          2015,
+          250
+        ],
+        [
+          2019,
+          250
+        ],
+        [
+          2020,
+          235
+        ],
+        [
+          2022,
+          240
+        ],
+        [
+          2025,
+          248
+        ]
+      ],
+      "demandShape": {
+        "seasonalAmplitude": 0.07,
+        "summerBump": 0.1,
+        "weekendFactor": 0.88,
+        "dailyNoise": 0.025
+      },
+      "wind": {
+        "meanCf": 0.25,
+        "seasonalAmplitude": 0.2,
+        "dailySigma": 0.7,
+        "hourlySigma": 0.22,
+        "yearSigma": 0.07
+      },
+      "solar": {
+        "meanCf": 0.19,
+        "cloudSeasonal": 0.3,
+        "yearSigma": 0.04
+      },
+      "hydro": {
+        "reservoirTwh": 18,
+        "inflowTwh": [
+          [
+            1995,
+            28
+          ],
+          [
+            2025,
+            26
+          ]
+        ],
+        "initialFill": 0.5,
+        "minFill": 0.1,
+        "targetFill": [
+          0.55,
+          0.6,
+          0.62,
+          0.6,
+          0.55,
+          0.5,
+          0.42,
+          0.36,
+          0.33,
+          0.35,
+          0.42,
+          0.5
+        ],
+        "inflowShape": [
+          1.5,
+          1.6,
+          1.6,
+          1.5,
+          1.1,
+          0.6,
+          0.35,
+          0.3,
+          0.4,
+          0.7,
+          1.1,
+          1.35
+        ],
+        "yearSigma": 0.3,
+        "waterValueSlope": 3.0,
+        "waterValueRefFactor": 2.0
+      }
+    }
+  ]
+}
