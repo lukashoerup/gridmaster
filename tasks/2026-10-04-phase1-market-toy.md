@@ -1,4 +1,4 @@
-Model: fable — this is the architecture every later phase stands on, and a wrong market model is expensive to detect: prices can look plausible while behaving wrongly.
+Model: opus — Opus builds everything since 2026-10-04 (workbench `docs/roles.md`); this task was marked `fable` as foundation work before that rule changed.
 
 # Task: Phase 1 — the market toy
 
