@@ -43,7 +43,7 @@ taste (here: anything players will see or feel) — or when the plan changes.
 | Path | What |
 |---|---|
 | `docs/original-brief.md` | Lukas's founding description, verbatim. Never edited. |
-| `docs/vision.md` | What the game is and is not: pillars, core loop, eras. Draft until Lukas approves. |
+| `docs/vision.md` | What the game is and is not: pillars, loops, eras. Approved (D6); pillar changes need Lukas. |
 | `docs/roadmap.md` | Phases, the gate that ends each one, the current phase. |
 | `docs/decisions.md` | Decision log, and the open questions waiting for Lukas. |
 | `docs/licences.md` | Source and licence of everything third-party or AI-generated. |

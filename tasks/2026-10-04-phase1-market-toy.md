@@ -3,8 +3,11 @@ Model: fable — this is the architecture every later phase stands on, and a wro
 # Task: Phase 1 — the market toy
 
 ## Status
-**Blocked** on decision Q2 (technology stack) in `docs/decisions.md`. Do not
-start, and do not add any dependency, until Lukas has approved a stack there.
+**Ready.** The stack is approved (decision D7): TypeScript, Vite, Vitest,
+ECharts, fast-check — nothing else without Lukas. Part (a) below, the core on
+synthetic data, can start now; parts (b)–(c) need real data and therefore
+wider network access (decision Q5) — if it is still blocked, stop there and
+say so rather than substituting data of unknown licence.
 
 ## Goal
 Prove the simulation before any gameplay exists (`docs/roadmap.md`, Phase 1).

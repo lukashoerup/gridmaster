@@ -30,3 +30,6 @@ audience and how to make the game fun; suggest how to start; create a repo.
   every claim accordingly; the verification task waits on decision Q5.
 - The workbench was updated in the same session (system map, Workbench HQ
   instructions) on its branch `claude/wizardly-ritchie-anzv17`.
+- After reading the summary, Lukas approved Q1–Q4 in chat (all as
+  recommended): now D6–D9. Committed on the gridmaster branch
+  `claude/wizardly-ritchie-anzv17`, per the branch rule.

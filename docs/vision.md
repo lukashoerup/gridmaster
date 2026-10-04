@@ -1,9 +1,10 @@
-# Vision — DRAFT, waiting for Lukas's approval (decisions Q1)
+# Vision — approved by Lukas 2026-10-04 (decision D6)
 
 Interprets `docs/original-brief.md` in the light of the 2026-10-04 research
 report (`docs/research/reports/Renewable energy tycoon game research.md`,
-"the report"; section names below refer to it). Until Lukas approves this,
-every line is a proposal.
+"the report"; section names below refer to it). This is the direction:
+changing a pillar needs Lukas; the open design questions at the end belong to
+the design task.
 
 ## In one sentence
 Grow a European energy company from a few solar panels in 1990 into a
@@ -133,7 +134,7 @@ read as a puzzle rather than a punishment? (`docs/roadmap.md`, Phase 2.)
 Windows and macOS through Steam (decision D4); Linux and Steam Deck if cheap.
 The interface is designed at 1280×800 with nothing reachable only by
 hovering, which serves the Deck now and keeps a tablet version possible.
-Mobile is not a launch platform (decisions Q3); the phone is where Lukas
+Mobile is not a launch platform (decision D8); the phone is where Lukas
 reviews builds in a browser.
 
 ## Open design questions (for the design task, not for Lukas yet)
