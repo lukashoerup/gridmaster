@@ -133,6 +133,7 @@ svg.board .label-strong { fill: var(--ink); font-weight: 600; }
 .card table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 0.92rem; }
 .card th, .card td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--line); }
 .card th:first-child, .card td:first-child { text-align: left; }
+.card .log-text { width: 100%; font: 0.78rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; resize: vertical; }
 .card .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; }
 
 @media (max-width: 600px) {

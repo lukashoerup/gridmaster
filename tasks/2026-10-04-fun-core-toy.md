@@ -139,8 +139,9 @@ and the year review must survive.
   years left, up to 8 a year, and runs the greedy battery. It scores about
   €1–40m over ten years depending on the seed (seeds 1–8: 20, 15, 15, 20,
   40, 1, 2, 10). The end card shows it next to the player's score.
-- **The session log** records every move and year, with timestamps; "Save
-  log" downloads it as JSON. `?seed=` replays a seed.
+- **The session log** records every move and year, with timestamps. "Save
+  log" shows it with Copy and Download buttons. The copy is there because
+  downloads do nothing inside sandboxed previews. `?seed=` replays a seed.
 - **Checked:** in a browser at 390 px and 1280 px, with no sideways scroll
   and no errors. The drag works with a mouse and touch, and tap-tap works
   too.

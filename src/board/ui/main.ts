@@ -495,13 +495,45 @@ function toast(text: string): void {
   toastTimer = window.setTimeout(() => t.remove(), 2600);
 }
 
+/**
+ * The session log, shown so a tester can copy it into a message: a download
+ * alone does nothing inside sandboxed previews, so it is only the second way.
+ */
 function exportLog(): void {
   note('log-saved');
-  const blob = new Blob([JSON.stringify({ toy: 'board', seed: state.seed, profit: Math.round(state.profit), year: state.year, log }, null, 1)], { type: 'application/json' });
-  const a = h('a', { href: URL.createObjectURL(blob), download: `board-log-${state.seed}.json` });
-  document.body.append(a);
-  a.click();
-  a.remove();
+  const text = JSON.stringify({ toy: 'board', seed: state.seed, profit: Math.round(state.profit), year: state.year, log }, null, 1);
+  const box = h('textarea', { class: 'log-text', readonly: true, rows: '8', 'aria-label': 'Session log' });
+  box.value = text;
+  const copy = h('button', { type: 'button', text: 'Copy log' });
+  copy.addEventListener('click', () => {
+    const fallback = (): void => {
+      box.focus();
+      box.select();
+      toast('Selected: copy it with your keyboard or menu.');
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => toast('Copied. Paste it into a message with your answers.'), fallback);
+    } catch {
+      fallback();
+    }
+  });
+  const save = h('button', { type: 'button', text: 'Download' });
+  save.addEventListener('click', () => {
+    const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: 'application/json' })), download: `board-log-${state.seed}.json` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+  });
+  modal(
+    [
+      h('h2', { text: 'Your session log' }),
+      h('p', { class: 'muted', text: 'Every move you made, with times. Copy it and send it with your answers.' }),
+      box,
+      h('div', { class: 'tools' }, copy, save),
+    ],
+    'Close',
+    () => undefined,
+  );
 }
 
 function restart(seed: number | null): void {
