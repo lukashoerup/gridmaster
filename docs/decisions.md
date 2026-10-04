@@ -6,6 +6,39 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D19 — The shape of the fun core: Lukas's answers to the review's questions (Lukas, 2026-10-04)
+> "1 plants 2 a 3-4 hour campaign in chapters. But players should be able
+> and want to replay, and or play slower to optimize gameplay and play
+> better I am thinking. Longer campaigns as in other games 3 I think
+> longer plans. 4 agree: a warning if its all they say 5 suprises I think.
+> Maybe scenery 6 It can be rough."
+
+These answer Q10 (`docs/reviews/2026-10-04-critical-review-of-fun-core.md`
+§6):
+1. **The player owns power plants and sells into a market.** Plants are
+   connected to grid hubs with limited room, and each hub's local price
+   rises and falls with its balance. There are no lines to towns.
+2. **A 3–4 hour campaign in chapters, built for replay.** Players can play
+   slowly to optimise. This replaces the prototype's "about an hour" (D10).
+3. **Longer plans.** The player decides on structure (what, where, which
+   hub, storage, contracts), not on hour-to-hour weather.
+4. **"A train game with turbines" is a warning** if it is all a player
+   says.
+5. **History comes as surprises,** and partly as scenery: events with
+   randomised timing and size from a deck shaped by real history. This
+   changes vision pillar 1, which was "history is the difficulty curve".
+6. **The toys may be rough.**
+
+The design that follows is `docs/design/fun-core.md` v2. It takes the
+review's process changes as builder-level test design:
+- money near-unlimited in toy 1;
+- pass and fail criteria written first;
+- an obvious bot;
+- a comparison with a tuned slice 1;
+- one variable per toy;
+- the reward layer (D14) frozen until a pass;
+- the share cap (D15) parked until a second zone.
+
 ### D18 — Pause realism work until the fun core is proven (Lukas, 2026-10-04)
 > "Agree."
 
@@ -220,7 +253,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17. Q5 (network access) matters again only when D18 is lifted. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17; Q10 is D19. Q5 (network access) matters again only when D18 is lifted. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
@@ -234,71 +267,19 @@ access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
 
-### Q10 — Six questions from the critical review, and its changes to the toy (taste; before the toy is built)
-Lukas asked for an independent, critical second opinion before anything is
-built: `docs/reviews/2026-10-04-critical-review-of-fun-core.md`.
+### Q9 — Build round 1 of the fun core? (go-ahead; the shape is settled by D19)
+`docs/design/fun-core.md` v2: own power plants and connect them to grid hubs
+with limited room. Each hub's price falls as you flood it and rises when it
+is hungry; you plan, not micromanage; history comes as surprises. Round 1
+is four cheap tests, each changing one thing, with pass and fail criteria
+written first:
+- a one-screen still;
+- toy 1 "Hubs";
+- toy 2 "The board", your own price curve;
+- slice 1 with tuned numbers, for comparison.
 
-**Its main findings:**
-- **The clock contradicts the money rule.** Hunger is hourly, but a chapter
-  runs at about a second a day, so the evening peak is a 40 ms flicker.
-- **The toy no longer tests the vision's own claim,** that cannibalisation
-  is fun.
-- **The toy tests five systems at once,** so a result cannot be attributed.
-- **A backbone at a fixed price is a dominant strategy.**
-- **"Lines to towns" is a grid owner's fantasy,** not a producer's.
-- **Playtest 1 measured a quarter of the design on a tuning cliff.** The
-  approved design fails about three of the eight principles, not six.
-
-**Its questions for Lukas (§6):**
-1. **Whose shoes?** A company that owns the wires and keeps towns lit, or
-   one that owns the power plants and sells into a market? The review
-   suggests the second, with lines as connections to substations whose local
-   price is the hunger meter.
-2. **How long** is one sitting? Should the 30-year story fit one evening, or
-   be a 3–4-hour campaign in chapters?
-3. **Act on what?** Today's weather (many small moves), or this year's plan
-   (fewer, bigger bets, then watch them pay off)?
-4. **"Fun, like a train game with turbines":** a win or a warning?
-5. **History** as deadlines you see coming, as surprises, or as scenery?
-6. **How rough** may the toy look and still be judged fairly?
-
-**Its changes to the toy, waiting for a yes:**
-- fix the clock (play on structure, a rolling hunger meter with a
-  worst-hour marker, one zoom-in day);
-- test with money switched off;
-- an endogenous or congesting backbone;
-- lines as substation connections;
-- keep one era escalator (1999) and a weather stream;
-- cut the auction, picks, medals, countdown, town growth and flags from toy
-  1, and freeze D14 until a pass;
-- write pass and fail criteria first, with an "obvious bot" and a
-  comparison against a tuned slice 1;
-- a paper test and a one-screen test before code;
-- a second micro-toy, F: the 24-hour price curve as the board.
-
-### Q9 — The fun core: build the "power network" toy? (taste; on hold for Q10)
-**On hold:** the critical review recommends reshaping the toy before it is
-built (Q10).
-Following D17, `docs/design/fun-core.md` compares what makes Transport
-Tycoon, Sid Meier's Railroads!, Factorio, RTS games and Mini Metro fun
-(eight principles), and scores slice 1 against them: it fails six of eight.
-It proposes a new core: **build a power network on a living map**.
-- Place turbines and panels on fogged resource spots.
-- Draw lines to towns. A town pays more the hungrier it is, and flooded
-  towns pay almost nothing.
-- Power flows visibly, and "+€" pops at the towns.
-- The problems are your own: congestion, flooding, the evening gap.
-- Towns you keep lit grow.
-- Nordhav races you for spots, and supply contracts and patents are
-  auctioned.
-- Each year, pick one of three bonuses.
-- Chapters of about 45 minutes with medals.
-
-**Recommended:** build it first as a small **toy** (one session, at most
-two: `toy.html`, `src/toy/`, nothing existing changed). Lukas and 2–3
-friends then play 15–20 minutes and answer: keep playing? most fun moment?
-when waiting? If it is fun, the prototype is rebuilt on it. If not, one
-iteration, then the claim-race toy (C). Alternatives are in the design's §4.
+The task is `tasks/2026-10-04-fun-core-toy.md`, about two sessions.
+**Recommended:** go.
 
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are

@@ -56,9 +56,12 @@ proven on one zone before Europe is built.
   and loans, speed controls, the annual report. **Lukas's first playtest:
   "not fun yet".** It is passive, the player waits for cash, and expensive
   setups are out of reach (`docs/reviews/2026-10-04-playtest-1.md`). Then
-  **D17: fun first.** The next step is to find a fun core with a small toy
-  (`docs/design/fun-core.md`, Q9: "build a power network on a living map"),
-  then rebuild the prototype on it. Slice 2 and later wait.
+  **D17: fun first.** A critical review followed, and Lukas's answers (D19)
+  shaped the fun core: own power plants on a map of hungry grid hubs; longer
+  plans; history as surprises; a 3–4 hour campaign in chapters
+  (`docs/design/fun-core.md` v2). Next: round 1, four cheap tests with pass
+  and fail criteria (Q9, `tasks/2026-10-04-fun-core-toy.md`). Then rebuild
+  the prototype on whichever core passes. Slice 2 and later wait.
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
   and a first wind turbine under fixed tariffs, the hourly market from 1999,

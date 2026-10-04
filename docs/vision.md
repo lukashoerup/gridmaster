@@ -35,7 +35,10 @@ thing and push back.
   of dollars, hope for more.
 
 ## Pillars
-1. **History is the difficulty curve.** Four real eras, each a new problem:
+1. **Changed by D19: history arrives as surprises and scenery.** Events have
+   randomised timing and size, drawn from a deck shaped by real history, so
+   there is no calendar to study. The original text follows for reference.
+   **History is the difficulty curve.** Four real eras, each a new problem:
    1990s flat feed-in tariffs (low variance — learn to build); the 2000s
    subsidy gold rush (lock in tariffs before the caps); the 2010s hangover
    (retroactive cuts, market exposure); 2020–2026 volatility (storage,

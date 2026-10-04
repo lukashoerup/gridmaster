@@ -1,236 +1,176 @@
-# The fun core (proposed)
+# The fun core (v2, proposed)
 
-**Status:** proposed on 2026-10-04 and waiting for Lukas as **Q9** in
-`docs/decisions.md`. It follows D17 ("fun first"): where realism and fun
-conflict, fun wins. It supersedes `running-the-company.md` as the next step;
-that document stays as an idea bank for layers built on top of a fun core
-later.
+**Status:** v2, 2026-10-04, after Lukas's answers (D19) and the critical
+review (`docs/reviews/2026-10-04-critical-review-of-fun-core.md`). Waiting
+for Lukas's go to build round 1 (Q9). It follows D17 (fun first) and D18
+(realism work paused).
 
-> "I think we should try and hold off a bit on the realism part. I want to
-> focus on making features/game design that is essentially more fun and
-> rewarding. My ideas were just examples, and not necessarily all of them
-> good. … we should get inspired by what works well in other similar games.
-> Such as transport tycoon, Sid meiers railroads, OpenTTD (although I do not
-> particularly like that game), and maybe aspects of games like factorio
-> (although quite different), and maybe RTS games … It is alpha omega that
-> it is fun, rewarding and engaging. So we need a fun core, that we can
-> built on top of I think." — Lukas, 2026-10-04
+v1 ("a power network: draw lines to hungry towns") is in git history. The
+review found four flaws in it:
+- its hourly money rule was invisible at the planned clock;
+- it was a grid owner's fantasy, not a power company's;
+- a fixed-price backbone was a dominant strategy;
+- it stopped testing the game's own claim.
+
+v2 fixes them with Lukas's answers.
+
+## What Lukas decided (D19)
+| Question | His answer | What it means here |
+|---|---|---|
+| Whose shoes? | "plants" | You own power plants and sell into a market. You pay to connect them to grid hubs that someone else owns, as in Denmark. No lines to towns |
+| How long? | "a 3-4 hour campaign in chapters. But players should be able and want to replay, and or play slower to optimize gameplay and play better … Longer campaigns as in other games" | Chapters of about 50 minutes. Built for replay. Free pause and a slow speed for players who want to optimise |
+| Act on what? | "longer plans" | The player decides on structure (what, where, which hub, storage, contracts), not on today's weather. The hourly market runs underneath, and the player reads days, weeks and seasons |
+| "A train game with turbines"? | "a warning if its all they say" | What a player should mention is the market: their own plants pulling their own price down, and staying ahead of it |
+| History? | "suprises I think. Maybe scenery" | Events come as surprises, with randomised timing and size, drawn from a deck shaped by real history; eras and places are scenery. No calendar to study |
+| How rough? | "It can be rough" | The toys are judged on play, not looks |
 
 ## In one sentence
-**Build a power network on a living map.** Put turbines and panels where the
-wind and sun are, and string lines to hungry towns. Keep the towns lit, and
-earn the most when and where power is scarce. Meanwhile your own growth
-floods the towns you supply, and rivals race you for the best spots.
+**Plan a fleet of power plants across a map of hungry grid hubs, and stay
+ahead of the price your own success pulls down.**
 
-*Transport Tycoon moves goods through space. Gridmaster moves energy through
-space, along lines, and through time, in storage.*
+The sentence a player should say to a friend: *"You build where the grid is
+hungry, and the game is staying one step ahead while your own plants, your
+rivals and some nasty surprises flood or starve it."*
 
-## 1. What the games Lukas named have in common
+## The ten principles
+§1 of v1 drew eight principles from Transport Tycoon, Sid Meier's
+Railroads!, Factorio, RTS games and Mini Metro:
+1. a toy on a map;
+2. it visibly works;
+3. your own growth makes the problems;
+4. one money rule with levers;
+5. something new often;
+6. rivals racing;
+7. stakes and a shape;
+8. low friction.
 
-| Game | Where the fun comes from | The mechanism |
+The review adds two, and both fit "longer plans":
+9. **the bottleneck is attention, not cash;**
+10. **uncertainty with a visible reveal.**
+
+## The core
+
+### The map: plants, hubs, connections
+- **Hubs** are grid substations, a handful in a region. Each has a demand
+  behind it (towns and industry with daily and seasonal shapes) and
+  **limited connection room** in MW. Grid upgrades that add room arrive as
+  surprises.
+- **Spots** for wind and sun are fogged until scouted or built on.
+- **Connecting a plant.** You place a plant on a spot and connect it to a
+  hub. The connection costs per km and uses the hub's room. That is the
+  real producer's job: the grid operator owns the grid, and producers pay to
+  connect.
+- **Links.** Hubs link to each other and to the national market through
+  links with a capacity.
+
+### The money rule
+> **Your power earns your hub's price at the hour you make it, and the more
+> power at your hub that hour, the lower that price.**
+
+- **The price.** A hub's price is the national market price (cleared by
+  the existing merit-order core, so it reacts to everyone's building) while
+  its links have room. When the links are full, the hub's price separates
+  from it: flooded hubs fall, hungry hubs rise.
+- **What the player reads**, so the rule is readable without watching
+  hours:
+  - each hub's **typical day**: a 24-hour curve averaged over recent weeks,
+    with the player's own output shaded on it;
+  - the **worst hour** marked;
+  - a colour from its balance: red is hungry, green balanced, blue
+    flooded.
+- **This is cannibalisation made visible.** Put too much wind on the Lemvig
+  hub and Lemvig turns blue on windy nights; your earned price there sags,
+  and you see why. The answers are the levers:
+  - another hub;
+  - another kind of plant (sun when the wind fails);
+  - storage at the hub, to move energy from blue hours to red;
+  - a contract that fixes the price.
+
+### The clock: plans, not weather
+- **The pace.** A year lasts about 5 minutes at ×1 [tuning]. Play is
+  continuous, with pause, ×1, ×3 and ×10. The hourly simulation runs
+  underneath; the player reads weeks and seasons, not hours.
+- **Decisions are plans:**
+  - what to build and where;
+  - which hub to connect to;
+  - how big a store, and its simple rule;
+  - whether to take a contract;
+  - when to sell or repower.
+- **Rhythm.** Each year closes with a **review that reveals your bets**:
+  what each plant earned, against what the alternative would have earned
+  ("called it", principle 10). It is also the natural moment to plan the
+  next year. Surprises during the year force re-plans.
+
+### Surprises: history as a deck, not a calendar
+- **Events** are drawn from a deck shaped by real history: a gas crisis, a
+  calm winter, a credit crunch, a sudden fall in solar prices, a storm, a
+  grid upgrade, a policy change. Each has a window and a range of size, so
+  every run differs (replay).
+- **Escalators still escalate,** but their timing varies within a window.
+  For example, "the market opens" some time in 1998–2001, and "cheap solar"
+  some time in 2009–2013. This keeps the late game moving, which is the
+  review's point about history as pacing.
+- **Scenery:** the era's machines, places, names and news lines.
+- **Later, perhaps:** a fixed historical calendar as an option.
+
+### The bottleneck: attention and room, not cash
+- **Money flows faster than in slice 1** [tuning]. The limit is hub room,
+  good spots and timing: what to do next, not when you can afford it.
+- **Round 1 tests the core with money near-unlimited.** If it is dull when
+  rich, the core is wrong; if it is fun, money is tuning.
+
+### Rivals (after round 1)
+- **Nordhav and others** add plants to hubs: they flood your hubs and race
+  you for spots and room.
+- **In round 1** they appear only as "everyone else's" background build-out,
+  which already moves the national price.
+
+### Campaign and replay
+- **The campaign** runs 3–4 hours in about four chapters of about 50
+  minutes, with goals, as in Railroads! scenarios.
+- **Replay** comes from the surprise deck, fogged spots, seeds and medal
+  goals. A player can pause freely and play at ×1 to optimise, or at speed.
+- **Longer play** comes later: a sandbox running past 2025.
+
+## Round 1: test before rebuilding
+Round 1 has one variable per test; it is the review's §2, reshaped by
+D19. Task: `tasks/2026-10-04-fun-core-toy.md`.
+
+| Test | What it answers | Cost |
 |---|---|---|
-| **Transport Tycoon / OpenTTD** | Building routes on a map and watching them work | Pay = cargo × distance × speed, readable and exploitable ([OpenTTD wiki](https://wiki.openttd.org/en/Manual/Game%20Mechanics/Cargo%20income)); trains visibly carry cargo; money pops at the station; your own network makes the problems (congestion, breakdowns); new engines by year. OpenTTD's fiddliness (signals, complex junctions) is what Lukas dislikes |
-| **Sid Meier's Railroads!** | The same toy with friction removed, plus rivalry | New technology is **auctioned as a 10-year patent**; industries, power plants among them, can be bought; rival tycoons (Gould, Vanderbilt) bid against you for industries and patents ([Wikipedia](https://en.wikipedia.org/wiki/Sid_Meier%27s_Railroads!); [GamesRadar](https://gamesradar.com/sid-meiers-railroads-review/2)); demand at a destination changes as you deliver to it [unverified detail] |
-| **Factorio** | "Every improvement unlocks a better improvement, and every upgrade creates a new puzzle"; the factory itself is the feedback ([Supercraft](https://supercraft.host/article/factorio-retrospective-time-disappear/)) | A bottleneck loop: a line stalls, fix it upstream, then it demands more downstream; constant research unlocks; visible flow; ratios to solve (storage per panel) |
-| **RTS** (Command & Conquer, Age of Empires, the economic RTS Offworld) | Pressure, a race and map control | Expand to resource spots before the enemy does; fog of war to scout; power as a base resource (in C&C, low power halves production and switches off defences and radar ([C&C wiki](https://cnc.fandom.com/wiki/Power_Plant_(Red_Alert_1)))); short matches with a clear winner |
-| **Mini Metro** (not named, but the cleanest example of the same toy) | A network you draw, under growing pressure | Draw a line and passengers flow. Each week, choose one upgrade. An overcrowded station counts down to game over ([Wikipedia](https://en.wikipedia.org/wiki/Mini_Metro_(video_game))) |
+| **One-screen still** | Can three people point to where money is made and where the problem is, in 30 seconds? | Tiny |
+| **Toy 1, "Hubs"** | Is planning plants across hungry hubs fun, with the bottleneck on attention? | One session |
+| **Toy 2, "The board"** (review's F) | Is fighting your own falling price fun? One hub's typical day as the board: drop wind and sun blocks and watch the curve sag; drag battery energy from blue hours to red; rivals' blocks arrive | One session |
+| **Slice 1, tuned** | Was the old core broken, or only its numbers? Income ×3 and three stub offers | Tiny |
 
-**The eight principles that follow.** Each is a test the core must pass:
-1. **A toy you build on a map with your hands.** Placing and connecting is
-   the pleasure, and the creation is visibly yours.
-2. **Your creation visibly works.** Flow moves along it, and money appears
-   where the work is done.
-3. **Your own growth makes the problems.** Congestion, starved lines,
-   overcrowding: the challenge always concerns *your* system, and fixing it
-   feels good.
-4. **One short money rule with levers on the map.** It is readable at once
-   and exploitable with skill ("cargo × distance × speed").
-5. **Something new every few minutes:** research, new models, the weekly
-   pick.
-6. **Rivals racing for the same visible things:** spots, cities, auctions.
-7. **Stakes and a shape:** scenarios with goals and deadlines, and a way to
-   fail.
-8. **Low friction:** OpenTTD's depth without its fiddliness, in the
-   Railroads! way.
+**Pass** (written before coding; review §2):
+- three of four testers play past the 15-minute stop unprompted;
+- the median is at least one logged decision a minute;
+- no stretch longer than two minutes at top speed;
+- three of four state the money rule correctly;
+- at least two name a decision they regret;
+- the toy beats tuned slice 1 on "keep playing";
+- the **obvious bot** ("connect the nearest windy spot to the reddest hub
+  with room") scores clearly below thoughtful humans.
 
-## 2. Our current core against the principles
+**Fail:**
+- more than 30% of time at top speed;
+- the "most fun" moment is the animation;
+- nobody regrets a decision;
+- the obvious bot matches the humans.
 
-| Principle | Slice 1 today |
-|---|---|
-| 1 Toy on a map | ✗ Pick a site from a list, then pick a model |
-| 2 Visibly works | ✗ Cash ticks up; nothing moves |
-| 3 Self-made problems | ✗ Problems come from outside, through history and prices; nothing to fix |
-| 4 One money rule with levers | ✗ Price × output, set by an invisible market; few levers |
-| 5 Something new often | ✗ A few unlocks, by calendar |
-| 6 Rivals racing | ✗ Faceless history claims sites |
-| 7 Stakes and a shape | ~ One 30-year run; a medal at the very end; bankruptcy |
-| 8 Low friction | ✓ Simple to operate |
+**Mixed:** one iteration on the weakest measure, then decide.
 
-This is why slice 1 is passive (playtest 1). No layer of management depth
-fixes a core that fails 1–6, which is the lesson of Turmoil and Rise of
-Industry (the research report).
+**Not in round 1:**
+- the reward layer (D14, frozen until a pass);
+- the share cap (D15, parked until a second zone);
+- auctions, the pick-one-of-three, medals, countdowns;
+- rivals' flags and zoom-in days.
 
-## 3. The proposed core: a power network
-
-### The map
-- **Region:** a stylised region, starting with northwest Jutland (DK1, D10).
-- **Towns:** dots sized by population, plus a few industries (a dairy, a
-  cement works; later a data centre).
-- **Resource spots:** windy coasts and hills, sunny fields. Their quality is
-  **fogged** until scouted or built on.
-- **The national grid:** a backbone with a few substations, where power can
-  always be sold or bought at the national price.
-
-### The money rule (one sentence the player learns in a minute)
-> **A town pays more the hungrier it is.**
-
-- Each town has a hunger meter: demand this hour minus the power it gets.
-  Demand follows a daily curve with morning and evening peaks, and is higher
-  in winter.
-- A **hungry town (red)** pays a high price. A **satisfied town (green)**
-  pays a normal one. A **flooded town (blue)** pays almost nothing.
-- Surplus flows on to the backbone, where it earns the safe, lower national
-  price.
-- This is the market fighting back (pillar 2) as a meter anyone can read.
-  Flood a town with wind at night and it pays nothing; reach it at the
-  evening peak and it pays a lot. It is Transport Tycoon's "cargo × distance
-  × speed" turned into "energy × hunger × timing".
-
-### What the player does
-- **Place** a turbine or panels on a spot with one click; the cost is shown.
-- **Draw** a line from it to a town, to another line or to the backbone:
-  click A, click B, and it routes itself (Railroads!, never OpenTTD's
-  fiddliness). Cost is per km. The line's **capacity** is shown as its
-  thickness.
-- **Watch** power flow as moving dots, denser for more MW. Each town pops
-  "+€" for each day's sales; turbines spin with the wind and panels glint by
-  day. Day and night pass visibly, and the evening peak glows.
-- **Fix what your growth breaks:**
-  - **Congestion.** On a windy night your line to Holstebro is full. It
-    turns red, the farthest turbines stop, and you lose money you can see.
-    Upgrade the line, build a second route, or put storage at the wind farm.
-  - **Flooding.** Your wind has made Lemvig blue at night. Connect another
-    town, sell to the backbone, add storage to move the energy to the
-    evening peak, or add solar to reach the midday need.
-  - **The evening gap.** Calm evenings leave your towns red while you earn
-    nothing. Storage (time transport), a second region whose wind blows when
-    yours doesn't, or a supply contract that pays a fixed price.
-- **Grow the map.**
-  - Towns you keep lit grow, as in Transport Tycoon, and growth means more
-    demand.
-  - Regions you make green and cheap attract industry: "A data centre wants
-    to build near Viborg if 50 MW of green supply is connected by 2014." It
-    is a goal you earn, and real in spirit, since Danish data centres came
-    for green power.
-
-### Rivals, the RTS layer
-- **Nordhav** owns the old coal plants on the backbone, a steady baseload
-  that keeps prices calm. Later it builds wind of its own, and its flags go
-  up on spots you wanted: a visible **race for the windy coast**.
-- **Supply contracts are auctioned.** "Holstebro tenders its power for
-  2000–2010; sealed bids in 60 days." Win, and a town pays your price
-  whatever its hunger, in return for keeping it lit. Lose, and Nordhav
-  supplies it.
-- **Technology is auctioned as patents,** in the Railroads! way. "The first
-  2 MW turbine: the winning bid gets it two years early and a cost
-  advantage." Rivals bid too.
-- **Scouting:** measure a spot to clear the fog, before the rival does.
-
-### Something new every few minutes
-- **Era unlocks:** bigger turbines, cheaper solar, batteries, offshore
-  (with long sea cables to shore), heat stores at district-heating plants (a
-  Danish way to soak up cheap power).
-- **Pick one of three each new year,** in the Mini Metro way: a crew
-  discount, a free survey, a line upgrade, a grant. It is a quick, rewarding
-  choice that varies every run.
-- **Milestones and company levels** (D14), and town growth you can see.
-
-### Stakes and a shape
-- **Chapters of about 45 minutes,** each a scenario with bronze, silver and
-  gold, in the Railroads! and Railroad Tycoon II way. For example:
-  1. "Wind pioneers", Thy, 1995–2002;
-  2. "The big build-out", all of Jutland plus offshore, 2002–2012;
-  3. "Too much of a good thing", 2012–2020;
-  4. "Volatility", 2020–2025.
-
-  This matches the vision's four era chapters.
-- **A way to fail that creates tension:** a town you have contracted that
-  stays dark starts a Mini Metro-style countdown. Lose it and you lose the
-  contract and reputation, not the game.
-
-### What realism becomes
-- **History** is flavour and unlocks: the era's machines, prices that drift
-  by era, and the big set pieces. In 2022 the backbone price soars and
-  anyone with spare power cashes in; in December 2024 a windless week turns
-  every town red. History is no longer a difficulty curve the player must
-  study.
-- **Weather** can keep its real shapes from the Phase 1 core, because they
-  make wind and sun feel alive. Exact market numbers drop out of the
-  player's view.
-- **Kept, because these truths are the fun:** intermittency, the value of
-  being where and when power is scarce, storage, and your own success
-  flooding the market.
-
-## 4. Alternatives considered
-| Core | Feels like | Why not first |
-|---|---|---|
-| **B. Site layout puzzle** (Factorio-like): lay out each farm's turbines, cables and transformers on a grid, with wake losses | A satisfying optimisation puzzle | It drifts into the engineering sim the vision rules out, and it is fun per site, not as a company |
-| **C. Claim race** (Offworld/Turmoil-like): short matches on today's site map; claim spots against rivals; one shared price that reacts | Tense, replayable | No toy to build and nothing visibly working (principles 1–3). It is a good *mode* on top of A, not a core |
-| **D. Keep the current core and add management depth** (`running-the-company.md`) | A deeper spreadsheet | Fails principles 1–4 at the root; Lukas has set it aside |
-
-## 5. How we find out: a toy, not a slice
-No design guarantees fun, and only playing does. The next build should
-therefore be a **toy**, small and fast: one session, at most two.
-
-**In the toy:**
-- one map (northwest Jutland): 8 towns, 12 fogged spots, a backbone;
-- wind, solar and lines; storage early (time-shifted for the toy);
-- hunger pricing, flow animation and "+€" pops;
-- Nordhav and its flags;
-- one contract auction;
-- the pick-one-of-three each year;
-- chapter 1's goals;
-- pause and speeds.
-
-**Not in the toy:** loans beyond one simple loan, the real market data,
-saves, tutorials, art.
-
-**The test, about 15–20 minutes of play.** Lukas, then 2–3 friends, answer
-three questions:
-1. Did you want to keep playing?
-2. What was the most fun moment?
-3. When were you just waiting?
-
-The game logs decisions per minute and the time until the first problem
-caused by the player's own network. **Targets:** a decision at least once a
-minute; the first self-made problem within 10 minutes.
-
-**If it is fun,** the toy becomes the core the prototype builds on:
-- slice 1's money, loans, saves and history calendar are reused;
-- the reward layer (D14) and the goal (D15) sit on top;
-- the idea bank (`running-the-company.md`) feeds later layers.
-
-**If it is not,** one iteration on its weakest principle. If it still is not
-fun, toy C.
-
-**Where it lives:** a new page and folder (`toy.html`, `src/toy/`) beside the
-prototype. `src/sim` and `src/game` stay untouched, so nothing is thrown
-away while we find out.
-
-## 6. What this changes, if Lukas approves
-- **The vision.** The pillars stay in spirit, in a new order of priority,
-  "fun first" (D17):
-  - "History is the difficulty curve" becomes "history is flavour and
-    unlocks";
-  - "The market fights back" is kept as town hunger;
-  - the scope guardrail "not a grid-physics sim" still holds, since lines
-    are a transport network, not power flow.
-
-  These edits follow the toy, once the core is proven.
-- **The roadmap.** Phase 2 becomes "find the fun core (toy), then build the
-  prototype on it". The gate question stays: do players want to keep going?
-- **The Phase 2 task.** Slices 2–8 wait. The toy is the next task.
-- **Risk.** Power Network Tycoon (1.0 in September 2026, report) is a grid
-  game built on engineering physics. Gridmaster stays a business tycoon:
-  money, rivals, history, hunger prices. The toy should feel like Railroads!,
-  not like a circuit simulator.
+## What this changes
+- **Vision pillar 1** becomes "history arrives as surprises and scenery"
+  (D19). Pillars 2–6 stand.
+- **Length.** The prototype's "about an hour" (D10) becomes a 3–4 hour
+  campaign in chapters (D19).
+- **D15:** the goal is kept, and the share cap parked until a second zone.
+- **D14:** frozen, then re-derived after round 1 for whichever core passes.
