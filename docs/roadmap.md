@@ -1,6 +1,10 @@
 # Roadmap
 
-**Current phase: 1 — market toy.** Phase 0 closed 2026-10-04: research done,
+**Current phases: 1 — market toy, and 2 — one-zone prototype, in parallel
+(D16).** Lukas decided on 2026-10-04 to build the Phase 2 prototype now, on
+the Phase 1 simulation core and its placeholder data, while Phase 1's real
+data and calibration continue in other sessions
+(`tasks/2026-10-04-phase2-one-zone-prototype.md`). Phase 0 closed 2026-10-04: research done,
 direction, technology, platforms and first-release scope decided (D6–D9 in
 `docs/decisions.md`). The Phase 2 prototype is already designed and approved
 (`docs/design/one-zone-prototype.md`, D10–D12, with its reward layer D14).
@@ -41,7 +45,13 @@ proven on one zone before Europe is built.
   seasonal shapes; volatility rising with renewables; negative prices in
   Germany from 2008; solar's own price sagging as solar is built.
 
-### Phase 2 — One-zone prototype: is the core loop fun?
+### Phase 2 — One-zone prototype: is the core loop fun? ← now, in parallel (D16)
+- **Status (2026-10-04):** started before Phase 1's gate, by Lukas's
+  decision D16; built in slices on placeholder prices, switching to real
+  data when Phase 1 part (b) lands. Slice 1 is playable (`play.html`): the
+  farm, wind turbines on sites, fixed tariffs then the hourly market, money
+  and loans, speed controls, the annual report. Next: solar parks and the
+  "why?" breakdown (slice 2).
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
   and a first wind turbine under fixed tariffs, the hourly market from 1999,

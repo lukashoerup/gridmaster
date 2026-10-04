@@ -7,9 +7,10 @@ storage, hydro, nuclear and experimental technology, in electricity markets
 and weather that behave like the real thing — and push back when everyone
 builds the same thing.
 
-**Status:** Phase 1, the market simulation (October 2026). The simulation core
-and an explorer page exist, running on placeholder inputs; real data and the
-calibration against published prices are next. No gameplay yet.
+**Status:** Phases 1 and 2 in parallel (October 2026). The market simulation
+and its explorer page run on placeholder inputs; real data and the calibration
+against published prices are next. The first playable slice of the one-zone
+prototype (Western Denmark, 1995–2025) is built on top of it: `play.html`.
 
 ## Where to look
 | If you want… | Open |
