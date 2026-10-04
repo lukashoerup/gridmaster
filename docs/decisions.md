@@ -194,6 +194,41 @@ access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
 
+### Q8 — Adopt "running the company" for the prototype? (taste and scope; before slice 2)
+Lukas played slice 1 on 2026-10-04 and said it is "not fun yet". In his
+words: "very passive"; "time passes too quickly and there is not enough to
+do"; he wants "more stats on how much the individual assets actually earn
+based on also debt interest"; "we need offshore wind"; it is "very hard to
+afford the more expensive setups". The full text and the measured diagnosis
+are in `docs/reviews/2026-10-04-playtest-1.md`. The proposed answer is
+`docs/design/running-the-company.md`:
+- a per-asset ledger (after interest and repayments);
+- maintenance plans, faults and repairs;
+- upgrades, including automatic shutdown at low prices;
+- insurance;
+- service bases and departments;
+- site character and measurement campaigns;
+- co-op shares, project finance, partners and build-to-sell;
+- a quarterly review and a slower clock;
+- company charters;
+- offshore (the Horns Rev 1 stake, the Anholt and Horns Rev 3 tenders).
+
+**Recommended:** adopt it, with its slice order:
+1. slice 2: the ledger and asset operations;
+2. slice 3: funding, site character, charters and offers;
+3. slice 4: offshore;
+4. then solar, storage, the rest of the reward layer and the playtest kit.
+
+Lukas's own choices inside it:
+- a year lasts about 4 minutes at ×1;
+- random faults stay on, halved on Casual, with an off switch;
+- three charters at the start;
+- offshore comes into the prototype;
+- Casual is the prototype's default preset.
+
+If adopted, D9's first-release table gains the operations layer and the
+funding tools. **Slice 2 does not start until this is answered.**
+
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are
 listed in `docs/roadmap.md`.
