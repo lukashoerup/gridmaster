@@ -16,6 +16,7 @@ import {
   hubById,
   hubIndex,
   hubName,
+  drive,
   obviousBot,
   plantYearlyCost,
   runBotUntil,
@@ -686,6 +687,18 @@ window.setTimeout(() => {
   log = new SessionLog('hubs', seed, new Date().toISOString());
   log.note(wall(), game.dateLabel(), `market opens ${game.dateLabel(game.marketOpensAt)} (hidden from the player)`);
   speedButtons.forEach((b, i) => b.classList.toggle('on', speedDefs[i]?.speed === 0));
+  if (params.get('still') === '1') {
+    // The one-screen still (round 1, part d): the obvious bot plays about
+    // 20 minutes at ×1, then the page stops on the hub its plants flood most.
+    const until = params.get('minutes') !== null ? Number(params.get('minutes')) * 60 * HOURS_PER_SECOND : 20 * 60 * HOURS_PER_SECOND;
+    drive(game, obviousBot, Infinity, until);
+    const mine = HUBS.map((hub, i) => ({ hub, st: game.hubStatus(i) })).filter((x) => x.st.playerMw > 0);
+    const worst = mine.sort((a, b) => a.st.ratio - b.st.ratio)[0];
+    selection = worst === undefined ? null : { kind: 'hub', id: worst.hub.id };
+    newsSeen = Math.max(0, game.news.length - 7);
+    render(true);
+    return;
+  }
   render(true);
   openHelp();
   requestAnimationFrame((now) => {

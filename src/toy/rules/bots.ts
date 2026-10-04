@@ -124,7 +124,15 @@ export function runBotUntil(inputs: WorldInputs, seed: number, bot: Bot, until: 
 }
 
 function play(inputs: WorldInputs, seed: number, bot: Bot, years: number, until: number): BotRun {
-  const game = new HubsGame(inputs, seed);
+  return summarise(drive(new HubsGame(inputs, seed), bot, years, until), bot);
+}
+
+/**
+ * Let a bot play an existing game until the absolute hour `until` (or for
+ * `years` whole years), stopping mid-year if `until` falls there. Used by
+ * the one-screen still, which shows the page after a bot run.
+ */
+export function drive(game: HubsGame, bot: Bot, years: number, until: number): HubsGame {
   let sinceDecision = BOT_EVERY_HOURS;
   let y = 0;
   while (game.status !== 'over' && y < years && game.now < until) {
@@ -140,11 +148,15 @@ function play(inputs: WorldInputs, seed: number, bot: Bot, years: number, until:
       if (y < years && game.now < until) game.startNextYear();
     }
   }
+  return game;
+}
+
+function summarise(game: HubsGame, bot: Bot): BotRun {
   let mw = 0;
   for (const p of game.plants) if (p.removedAt === null) mw += p.mw;
   return {
     bot: bot.name,
-    seed,
+    seed: game.seed,
     years: game.reviews.length,
     score: Math.round(game.score),
     perYear: game.reviews.map((r) => Math.round(r.profit)),

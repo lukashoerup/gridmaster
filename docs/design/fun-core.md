@@ -167,6 +167,31 @@ D19. Task: `tasks/2026-10-04-fun-core-toy.md`.
 - auctions, the pick-one-of-three, medals, countdowns;
 - rivals' flags and zoom-in days.
 
+### Round 1 so far (2026-10-04)
+What the builds taught before any human played; the human results go here
+when they come in.
+- **Toy 1 "Hubs" is built** (`toy.html`). The hub price rule reads on the
+  map and in each hub's typical day: overbuilding wind at a coastal hub
+  turns it blue on windy nights, and the hub panel says how much the
+  player's own plants pull its price down.
+- **The first tuning had no depth:** every hub started red and every plant
+  paid, so the obvious bot matched a careful planner. Depth appeared only
+  when most hubs started balanced, with two hungry ones and a flood-prone
+  coast, and when wind on a balanced hub stopped paying after the market
+  opened. Now a planner beats the obvious bot (seed 42, 1997–2000:
+  €3.1m against €1.35m; seed 7: €8.9m against €7.9m).
+- **"Charge when blue, discharge when red" needed a reading.** Taken
+  literally (flooded or hungry hours only), a battery sat idle at hungry
+  hubs, which never flood. It now charges in the typical day's cheapest
+  hours, or when flooded, and discharges in its dearest hours.
+- **A risk to watch:** after 2004 the core's placeholder prices climb, and
+  the player with the most megawatts wins whatever the hubs say. A
+  session spent at ×10 reaches those years, so the time-at-top-speed
+  measure matters doubly.
+- **The one-screen still** (`docs/design/round1/`) is the obvious bot after
+  about 20 minutes at ×1 (`toy.html?still=1&seed=42`): six coloured hubs,
+  the bot's plants and lines, and the flooded hub's typical day.
+
 ## What this changes
 - **Vision pillar 1** becomes "history arrives as surprises and scenery"
   (D19). Pillars 2–6 stand.

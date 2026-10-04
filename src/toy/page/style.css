@@ -224,7 +224,7 @@ table.grid th { color: var(--muted); font-weight: 500; }
 .news .n-market, .news .n-weather { font-weight: 600; }
 
 .toast {
-  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(120%); max-width: min(560px, calc(100% - 32px));
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(calc(100% + 40px)); max-width: min(560px, calc(100% - 32px));
   background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 8px; box-shadow: var(--shadow); transition: transform 0.25s; z-index: 30; pointer-events: none;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }

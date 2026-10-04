@@ -3,7 +3,7 @@ Model: opus — Opus builds everything (workbench `docs/roles.md`).
 # Task: round 1 of the fun core, four cheap tests
 
 ## Status
-**In progress (2026-10-04): (a), (b) and (c) built; (d) next.** Approved by D20 ("Go"). The shape is settled by D19. The design
+**Built (2026-10-04): (a)–(d); waiting for the playtests.** Approved by D20 ("Go"). The shape is settled by D19. The design
 is `docs/design/fun-core.md` v2, and the reasons are in
 `docs/reviews/2026-10-04-critical-review-of-fun-core.md`. Build (a) first.
 
@@ -71,15 +71,15 @@ its own. The pass and fail criteria are written before coding (design,
       the only allowed change to `src/game` and `src/play`, and it must be
       behind the flag.
 
-### (d) The one-screen still
-- [ ] A screenshot of toy 1 at about minute 20 of a bot run, to show three
+### (d) The one-screen still — built, see working notes
+- [x] A screenshot of toy 1 at about minute 20 of a bot run, to show three
       people for 30 seconds: "where is money made, and where is the
       problem?"
 
 ### Shared
 - [x] Rules pure and headless (boundary tests like `tests/game-boundary.test.ts`).
-- [ ] Tests green, typecheck clean, `npm run build` builds every page.
-- [ ] Private previews published.
+- [x] Tests green, typecheck clean, `npm run build` builds every page.
+- [x] Private previews published.
 - [ ] Lukas told, in plain words, what to try, and given the pass/fail
       questions to ask testers (design, "Round 1").
 
@@ -251,3 +251,15 @@ MW instead of per plant; the battery rule above.
 - **Checked:** in a browser at 390 px and 1280 px, from a saved game at the
   landowner offer; accepting closes the card and posts the notice.
 
+
+### (d) The one-screen still (2026-10-04)
+- `toy.html?still=1&seed=N` lets the obvious bot play toy 1 headless for
+  about 20 minutes of ×1 (to the last day of 2000) and stops the page,
+  paused, on the hub the bot's plants flood most (`?minutes=` changes the
+  stop). `drive` in `src/toy/rules/bots.ts` plays a bot on an existing game.
+- Screenshots at 1280 × 820: `docs/design/round1/one-screen-still-seed42.png`
+  and `…-seed7.png`. Show one for 30 seconds and ask "where is money made,
+  and where is the problem?" Expected answers: the red hubs (Holstebro,
+  Herning) are where power is worth most; Thyborøn is blue because the
+  player's own wind floods it, and its link is the bottleneck.
+- Self-made images, nothing third-party, so nothing for `docs/licences.md`.
