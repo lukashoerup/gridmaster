@@ -52,9 +52,10 @@ proven on one zone before Europe is built.
   farm, wind turbines on sites, fixed tariffs then the hourly market, money
   and loans, speed controls, the annual report. **Lukas's first playtest:
   "not fun yet".** It is passive, the player waits for cash, and expensive
-  setups are out of reach (`docs/reviews/2026-10-04-playtest-1.md`). A
-  redesign with a new slice order is proposed
-  (`docs/design/running-the-company.md`); slice 2 waits on Q8.
+  setups are out of reach (`docs/reviews/2026-10-04-playtest-1.md`). Then
+  **D17: fun first.** The next step is to find a fun core with a small toy
+  (`docs/design/fun-core.md`, Q9: "build a power network on a living map"),
+  then rebuild the prototype on it. Slice 2 and later wait.
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
   and a first wind turbine under fixed tariffs, the hourly market from 1999,

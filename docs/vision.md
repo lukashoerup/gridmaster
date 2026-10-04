@@ -1,6 +1,9 @@
 # Vision — approved by Lukas 2026-10-04 (decision D6)
 
 Amended the same day with D15: the goal, the competition model and ranks.
+**D17 (fun first):** where this vision's realism and fun conflict, fun wins.
+The pillars are revisited once a fun core is proven
+(`docs/design/fun-core.md`).
 
 Interprets `docs/original-brief.md` in the light of the 2026-10-04 research
 report (`docs/research/reports/Renewable energy tycoon game research.md`,

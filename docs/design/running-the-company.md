@@ -1,10 +1,12 @@
 # Running the company: operations, funding and offshore (Phase 2, proposed)
 
-**Status:** proposed on 2026-10-04 after Lukas's first playtest of slice 1
-(`docs/reviews/2026-10-04-playtest-1.md`). It waits for Lukas as **Q8** in
-`docs/decisions.md`. If approved, it extends
-`docs/design/one-zone-prototype.md`, and where the two differ this document
-wins. Numbers are [tuning] unless marked otherwise; the bots (§12) and
+**Status: an idea bank, not the plan (D17, 2026-10-04).** It was proposed
+after Lukas's first playtest of slice 1
+(`docs/reviews/2026-10-04-playtest-1.md`) as Q8. Lukas then set realism and
+management depth aside in favour of finding a fun core first
+(`docs/design/fun-core.md`, Q9). Its ideas (ledger, maintenance, funding
+tools, charters, offshore stages) are candidates for layers *on top of* a
+proven core. Numbers are [tuning] unless marked otherwise; the bots (§12) and
 playtests set them.
 
 ## The one-minute version

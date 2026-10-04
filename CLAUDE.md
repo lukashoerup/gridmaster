@@ -62,7 +62,7 @@ taste (here: anything players will see or feel) — or when the plan changes.
 | `docs/original-brief.md` | Lukas's founding description, verbatim. Never edited. |
 | `docs/vision.md` | What the game is and is not: pillars, loops, eras. Approved (D6); pillar changes need Lukas. |
 | `docs/roadmap.md` | Phases, the gate that ends each one, the current phase. |
-| `docs/design/` | Designs a builder implements from: `one-zone-prototype.md` (Phase 2); `running-the-company.md` (proposed after playtest 1, Q8). |
+| `docs/design/` | Designs a builder implements from: `one-zone-prototype.md` (Phase 2); `fun-core.md` (proposed, Q9: the toy to find the fun first, D17); `running-the-company.md` (an idea bank). |
 | `docs/decisions.md` | Decision log, and the open questions waiting for Lukas. |
 | `docs/licences.md` | Source and licence of everything third-party or AI-generated. |
 | `docs/research/` | 2026-10-04 research: market, competitors, audience, design, data, tech. |
