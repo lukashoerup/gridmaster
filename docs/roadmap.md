@@ -31,7 +31,7 @@ proven on one zone before Europe is built.
 
 ### Phase 1 — Market toy: does the simulation feel real? ← now
 - **Build:** the headless simulation core — real weather-years, demand, and
-  an hourly merit-order price for four zones (Denmark, Germany, Norway,
+  an hourly merit-order price for four zones (Western Denmark, Germany, Norway,
   Spain), 1995–2025 — plus a web page of charts to explore it from a link on
   a phone.
 - **Gate (Lukas looks):** do prices behave like the real ones? Daily and
@@ -39,14 +39,17 @@ proven on one zone before Europe is built.
   Germany from 2008; solar's own price sagging as solar is built.
 
 ### Phase 2 — One-zone prototype: is the core loop fun?
-- **Build:** ugly but playable in a browser. One zone, the panel-to-market
-  loop: start with a few panels under a feed-in tariff, grow into solar and
-  wind parks, meet the spot market, see your own building lower your price,
-  answer it with a battery. Loans, speed controls, "why did my price drop?".
-- **Gate:** Lukas and 3–5 friends play for 45 minutes. Does cannibalisation
-  read as a puzzle rather than a punishment, and do they want to keep going?
-  Iterate until yes. **This is the gate that matters most;** if the answer
-  stays no, the core loop changes before any content is added.
+- **Build:** ugly but playable in a browser. One zone (proposed: Western
+  Denmark, 1995–2025, about an hour), the panel-to-market loop: a few panels
+  and a first wind turbine under fixed tariffs, the hourly market from 1999,
+  your own building lowering your price, answers in east-west panels,
+  batteries and contracts. Loans, speed controls, "why did my price drop?".
+  Design: `docs/design/one-zone-prototype.md`.
+- **Gate:** Lukas and 3–5 friends play for about an hour. Does
+  cannibalisation read as a puzzle rather than a punishment, and do they want
+  to keep going? Pass criteria are in the design's playtest plan. Iterate
+  until yes. **This is the gate that matters most;** if the answer stays no,
+  the core loop changes before any content is added.
 
 ### Phase 3 — Vertical slice: would we show it to strangers?
 - **Build:** grow to 3–5 zones; the 1990–2010 chapters fully polished:
