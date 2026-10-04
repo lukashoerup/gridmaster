@@ -6,6 +6,14 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D20 — Go: build round 1 of the fun core (Lukas, 2026-10-04)
+> "Go"
+
+This answers Q9. Round 1 of `docs/design/fun-core.md` v2 is built in a
+fresh session from `tasks/2026-10-04-fun-core-toy.md`: toy 1 "Hubs"
+first, then toy 2 "The board", the tuned slice 1 and the one-screen still.
+Its pass and fail criteria are fixed before coding (design, "Round 1").
+
 ### D19 — The shape of the fun core: Lukas's answers to the review's questions (Lukas, 2026-10-04)
 > "1 plants 2 a 3-4 hour campaign in chapters. But players should be able
 > and want to replay, and or play slower to optimize gameplay and play
@@ -253,7 +261,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17; Q10 is D19. Q5 (network access) matters again only when D18 is lifted. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17; Q9 is D20; Q10 is D19. Q5 (network access) matters again only when D18 is lifted. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
@@ -266,20 +274,6 @@ it in the environment's settings (cloud environment menu → Edit → Network
 access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
-
-### Q9 — Build round 1 of the fun core? (go-ahead; the shape is settled by D19)
-`docs/design/fun-core.md` v2: own power plants and connect them to grid hubs
-with limited room. Each hub's price falls as you flood it and rises when it
-is hungry; you plan, not micromanage; history comes as surprises. Round 1
-is four cheap tests, each changing one thing, with pass and fail criteria
-written first:
-- a one-screen still;
-- toy 1 "Hubs";
-- toy 2 "The board", your own price curve;
-- slice 1 with tuned numbers, for comparison.
-
-The task is `tasks/2026-10-04-fun-core-toy.md`, about two sessions.
-**Recommended:** go.
 
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are

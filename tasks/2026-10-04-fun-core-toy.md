@@ -3,9 +3,9 @@ Model: opus — Opus builds everything (workbench `docs/roles.md`).
 # Task: round 1 of the fun core, four cheap tests
 
 ## Status
-**Waiting for Q9** (Lukas's go). The shape is settled by D19. The design
+**Ready: approved by D20 ("Go").** The shape is settled by D19. The design
 is `docs/design/fun-core.md` v2, and the reasons are in
-`docs/reviews/2026-10-04-critical-review-of-fun-core.md`.
+`docs/reviews/2026-10-04-critical-review-of-fun-core.md`. Build (a) first.
 
 ## Goal
 Find out by playing, cheaply and with one variable per test, whether

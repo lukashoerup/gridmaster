@@ -3,6 +3,10 @@ Model: opus — Opus builds everything since 2026-10-04 (workbench `docs/roles.m
 # Task: Phase 1 — the market toy
 
 ## Status
+**Paused by D18 (2026-10-04)** after the explorer fixes merged (PR #11).
+Parts (b), (c) and the verification pass wait until the fun-core round 1
+(D20) has shown a fun core. The core is used as is by the round 1 toys.
+
 **In progress.** Parts (a) core and (d) explorer were built on 2026-10-04 on
 placeholder inputs (branch `claude/wizardly-ritchie-anzv17`), then tested by
 three reviewers and fixed the same day (see the last working-notes section;
