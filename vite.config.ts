@@ -2,13 +2,14 @@ import { defineConfig } from 'vitest/config';
 
 // The explorer is a static folder that must work from any path (served from a
 // subfolder, or opened via a preview link), so every asset URL is relative.
-// Two pages: the market explorer (index.html) and the prototype (play.html).
+// Pages: the market explorer (index.html), the prototype (play.html) and
+// the round 1 toys (board.html, toy 2 "The board").
 export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
     rollupOptions: {
-      input: { index: 'index.html', play: 'play.html' },
+      input: { index: 'index.html', play: 'play.html', board: 'board.html' },
     },
     target: 'es2022',
     sourcemap: false,

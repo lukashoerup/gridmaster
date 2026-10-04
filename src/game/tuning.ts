@@ -116,5 +116,21 @@ export const MEDAL_SILVER_EUR = 100e6;
 export const MEDAL_GOLD_EUR = 250e6;
 export const MEDAL_GOLD_EARNED_SHARE = 0.9;
 
+/**
+ * Round 1's tuned comparison mode (`play.html?tuned=1`, tasks/2026-10-04-fun-core-toy.md
+ * part c): income multiplied, and three stub offers on fixed dates. [tuning]
+ */
+export const TUNED_INCOME_FACTOR = 3;
+export const TUNED_OFFERS: readonly { readonly id: 'landowner' | 'refinance' | 'firesale'; readonly year: number; readonly month: number }[] = [
+  { id: 'landowner', year: 1997, month: 6 },
+  { id: 'refinance', year: 2002, month: 3 },
+  { id: 'firesale', year: 2009, month: 4 },
+];
+export const LANDOWNER_FEE_EUR = 60_000;
+export const REFINANCE_FEE_SHARE = 0.01;
+export const FIRESALE_PRICE_EUR = 300_000;
+export const FIRESALE_UNITS = 2;
+export const FIRESALE_AGE_YEARS = 12;
+
 /** History claims a site this many months after announcing it. [tuning] */
 export const CLAIM_NOTICE_MONTHS = 6;
