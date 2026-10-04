@@ -6,6 +6,30 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D14 — The prototype gets a reward layer: the review's recommendation (Lukas, 2026-10-04)
+> "Go with your recommendation, including company levels and the rival."
+
+Answers Q6. From the fun and progression review
+(`docs/reviews/2026-10-04-fun-and-progression.md`), these go into the
+one-zone prototype design (`docs/design/one-zone-prototype.md`):
+- **P1** "called it" reveals and project scorecards (§4.12);
+- **P2** company levels the player earns: farm → co-op partner → developer
+  → utility (§4.9);
+- **P3** an offer deck, one optional offer every few minutes (§4.10);
+- **P4** one named rival, Nordhav, as the face of history's build-out, with
+  no decisions of its own (§4.11), replacing the design's "no rivals with
+  names";
+- **P7** jackpots, records and the player's footprint (§4.13);
+- **P9** restructuring the first time the company goes bust, game over the
+  second (§4.5);
+- **P10** reward measures in the playtest (§9).
+
+Deferred to after the first playtest, if testers report a dull middle or a
+flat ending: P5 (local support, a Horns Rev stake, turbine-model bets) and
+P8 (a hands-on December 2024 week). Not adopted now: P6 (an electric
+boiler, a warning pulled earlier). The pillars are unchanged; the numbers
+are tuning values for the bots and playtests to set.
+
 ### D13 — Sessions merge their own pull requests; Lukas tests and answers (Lukas, 2026-10-04)
 > "But do I have to merge the PRs? I would rather spend my time testing."
 > "And answering questions you ask me here."
@@ -107,7 +131,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
