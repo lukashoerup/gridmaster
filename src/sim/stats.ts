@@ -8,7 +8,11 @@ export interface TechStat {
   readonly generationTwh: number;
   /** Generation-weighted average price earned, €/MWh; null when nothing was generated. */
   readonly capturePrice: number | null;
-  /** Capture price divided by the time-weighted mean price; null when undefined. */
+  /**
+   * Capture price divided by the time-weighted mean price. Null when nothing
+   * was generated, or when the mean price is at or below 1 €/MWh: a ratio to
+   * a mean near or below zero flips sign or explodes and means nothing.
+   */
   readonly captureRate: number | null;
   readonly capacityMw: number;
 }
@@ -51,10 +55,12 @@ export interface ZoneSeriesForStats {
 
 const RENEWABLE: readonly TechId[] = ['wind', 'solar', 'hydro_ror', 'hydro_res', 'biomass'];
 
+/** Below this mean price (€/MWh) a capture rate is not defined (null). */
+export const CAPTURE_RATE_MIN_MEAN_PRICE = 1;
+
 export function zoneStats(z: ZoneSeriesForStats): ZoneStats {
   const n = z.hours;
   let sum = 0;
-  let sumSq = 0;
   let min = Infinity;
   let max = -Infinity;
   let negative = 0;
@@ -66,7 +72,6 @@ export function zoneStats(z: ZoneSeriesForStats): ZoneStats {
   for (let h = 0; h < n; h++) {
     const p = z.price[h] ?? 0;
     sum += p;
-    sumSq += p * p;
     if (p < min) min = p;
     if (p > max) max = p;
     if (p < 0) negative++;
@@ -77,7 +82,17 @@ export function zoneStats(z: ZoneSeriesForStats): ZoneStats {
     netExportMwh += z.netExport[h] ?? 0;
   }
   const mean = n > 0 ? sum / n : 0;
-  const variance = n > 0 ? Math.max(0, sumSq / n - mean * mean) : 0;
+  // Two passes over prices shifted by the first one: stable, and exactly 0 for a flat price.
+  const shift = z.price[0] ?? 0;
+  let shiftedSum = 0;
+  for (let h = 0; h < n; h++) shiftedSum += (z.price[h] ?? 0) - shift;
+  const shiftedMean = n > 0 ? shiftedSum / n : 0;
+  let sumSqDev = 0;
+  for (let h = 0; h < n; h++) {
+    const d = (z.price[h] ?? 0) - shift - shiftedMean;
+    sumSqDev += d * d;
+  }
+  const variance = n > 0 ? sumSqDev / n : 0;
 
   const byTech = {} as Record<TechId, TechStat>;
   let renewableMwh = 0;
@@ -104,7 +119,7 @@ export function zoneStats(z: ZoneSeriesForStats): ZoneStats {
     byTech[t] = {
       generationTwh: gen / 1e6,
       capturePrice,
-      captureRate: capturePrice !== null && Math.abs(mean) > 1e-9 ? capturePrice / mean : null,
+      captureRate: capturePrice !== null && mean > CAPTURE_RATE_MIN_MEAN_PRICE ? capturePrice / mean : null,
       capacityMw: z.capacityMw[t] ?? 0,
     };
   }

@@ -33,6 +33,20 @@ export function hashStream(seed: number, ...ids: number[]): number {
   return h;
 }
 
+/**
+ * 32-bit hash of a whole string (FNV-1a over its UTF-16 code units, then
+ * mixed), for stream ids derived from names such as zone ids: every
+ * character counts, so "DK1", "DK2" and "DXX" get different streams.
+ */
+export function hashString(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return mix32(h);
+}
+
 export class Rng {
   private a: number;
   private b: number;

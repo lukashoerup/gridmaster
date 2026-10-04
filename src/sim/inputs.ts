@@ -191,6 +191,30 @@ export function interp(kf: Keyframes, year: number): number {
   return last[1];
 }
 
+/**
+ * A continuous path through annual values, for fuel and carbon prices.
+ * `interp(kf, year)` is read as that year's average. The path runs linearly
+ * from 1 January to mid-year and on to 31 December, so it has no step at
+ * New Year and its average over each year is exactly that year's value.
+ * The 1 January value is the mean of the two years it joins, capped at
+ * twice the smaller one so the mid-year point never goes negative for
+ * non-negative inputs.
+ * @param fraction position within the year: 0 at 1 January 00:00, 1 at the end of 31 December
+ */
+export function annualPath(kf: Keyframes, year: number, fraction: number): number {
+  const v = interp(kf, year);
+  const join = (a: number, b: number): number => {
+    const lo = Math.min(a, b);
+    const mid = (a + b) / 2;
+    return lo >= 0 ? Math.min(mid, 2 * lo) : mid;
+  };
+  const start = join(interp(kf, year - 1), v);
+  const end = join(v, interp(kf, year + 1));
+  const peak = (4 * v - start - end) / 2;
+  const f = Math.min(1, Math.max(0, fraction));
+  return f <= 0.5 ? start + (peak - start) * (f / 0.5) : peak + (end - peak) * ((f - 0.5) / 0.5);
+}
+
 // ---------------------------------------------------------------------------
 // Validation helpers
 
@@ -213,16 +237,36 @@ function num(x: unknown, path: string): number {
   return x;
 }
 
+/**
+ * A finite number within [lo, hi]; `open` makes the low or high end
+ * exclusive ('lo', 'hi' or 'both').
+ */
+function numIn(x: unknown, path: string, lo: number, hi: number, open: 'lo' | 'hi' | 'both' | 'none' = 'none'): number {
+  const v = num(x, path);
+  const loOk = open === 'lo' || open === 'both' ? v > lo : v >= lo;
+  const hiOk = open === 'hi' || open === 'both' ? v < hi : v <= hi;
+  if (!loOk || !hiOk) {
+    const l = open === 'lo' || open === 'both' ? '(' : '[';
+    const h = open === 'hi' || open === 'both' ? ')' : ']';
+    fail(path, `expected a number in ${l}${lo}, ${hi}${h}, got ${v}`);
+  }
+  return v;
+}
+
+const SHARE: [number, number] = [0, 1];
+const NON_NEGATIVE: [number, number] = [0, Infinity];
+
 function str(x: unknown, path: string): string {
   if (typeof x !== 'string' || x.length === 0) fail(path, 'expected a non-empty string');
   return x;
 }
 
-function optNum(o: Record<string, unknown>, key: string, path: string, dflt: number): number {
-  return o[key] === undefined ? dflt : num(o[key], `${path}.${key}`);
+function optNum(o: Record<string, unknown>, key: string, path: string, dflt: number, range?: readonly [number, number], open?: 'lo' | 'hi' | 'both'): number {
+  if (o[key] === undefined) return dflt;
+  return range === undefined ? num(o[key], `${path}.${key}`) : numIn(o[key], `${path}.${key}`, range[0], range[1], open);
 }
 
-function keyframes(x: unknown, path: string): Keyframes {
+function keyframes(x: unknown, path: string, range?: readonly [number, number], open?: 'lo' | 'hi' | 'both'): Keyframes {
   const a = arr(x, path);
   if (a.length === 0) fail(path, 'needs at least one keyframe');
   const out: [number, number][] = [];
@@ -231,7 +275,7 @@ function keyframes(x: unknown, path: string): Keyframes {
     const r = arr(row, `${path}[${i}]`);
     if (r.length !== 2) fail(`${path}[${i}]`, 'expected [year, value]');
     const year = num(r[0], `${path}[${i}][0]`);
-    const value = num(r[1], `${path}[${i}][1]`);
+    const value = range === undefined ? num(r[1], `${path}[${i}][1]`) : numIn(r[1], `${path}[${i}][1]`, range[0], range[1], open);
     if (year <= prevYear) fail(`${path}[${i}]`, 'years must be strictly increasing');
     prevYear = year;
     out.push([year, value]);
@@ -239,10 +283,10 @@ function keyframes(x: unknown, path: string): Keyframes {
   return out;
 }
 
-function numbers(x: unknown, path: string, length: number): number[] {
+function numbers(x: unknown, path: string, length: number, range?: readonly [number, number]): number[] {
   const a = arr(x, path);
   if (a.length !== length) fail(path, `expected ${length} numbers`);
-  return a.map((v, i) => num(v, `${path}[${i}]`));
+  return a.map((v, i) => (range === undefined ? num(v, `${path}[${i}]`) : numIn(v, `${path}[${i}]`, range[0], range[1])));
 }
 
 function techId(s: string, path: string): TechId {
@@ -262,6 +306,12 @@ function requireStatus(o: Record<string, unknown>, path: string): string {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Range rules (stress finding F10): shares and fills in 0..1; demand,
+ * capacities, reservoir, inflow and noise sizes non-negative; seasonal
+ * amplitudes within ±1 so demand and wind stay non-negative; the water-value
+ * slope in 0..50 so its exponential stays finite; the reserve margin in 0..1.
+ */
 function parseZone(x: unknown, path: string): ZoneInput {
   const o = obj(x, path);
   const shape = obj(o['demandShape'], `${path}.demandShape`);
@@ -270,16 +320,18 @@ function parseZone(x: unknown, path: string): ZoneInput {
   let hydro: HydroInput | null = null;
   if (o['hydro'] !== null && o['hydro'] !== undefined) {
     const h = obj(o['hydro'], `${path}.hydro`);
+    const p = `${path}.hydro`;
+    const minFill = numIn(h['minFill'], `${p}.minFill`, 0, 1);
     hydro = {
-      reservoirTwh: num(h['reservoirTwh'], `${path}.hydro.reservoirTwh`),
-      inflowTwh: keyframes(h['inflowTwh'], `${path}.hydro.inflowTwh`),
-      initialFill: num(h['initialFill'], `${path}.hydro.initialFill`),
-      minFill: num(h['minFill'], `${path}.hydro.minFill`),
-      targetFill: numbers(h['targetFill'], `${path}.hydro.targetFill`, 12),
-      inflowShape: numbers(h['inflowShape'], `${path}.hydro.inflowShape`, 12),
-      yearSigma: num(h['yearSigma'], `${path}.hydro.yearSigma`),
-      waterValueSlope: num(h['waterValueSlope'], `${path}.hydro.waterValueSlope`),
-      waterValueRefFactor: num(h['waterValueRefFactor'], `${path}.hydro.waterValueRefFactor`),
+      reservoirTwh: numIn(h['reservoirTwh'], `${p}.reservoirTwh`, ...NON_NEGATIVE),
+      inflowTwh: keyframes(h['inflowTwh'], `${p}.inflowTwh`, NON_NEGATIVE),
+      initialFill: numIn(h['initialFill'], `${p}.initialFill`, minFill, 1),
+      minFill,
+      targetFill: numbers(h['targetFill'], `${p}.targetFill`, 12, SHARE),
+      inflowShape: numbers(h['inflowShape'], `${p}.inflowShape`, 12, NON_NEGATIVE),
+      yearSigma: numIn(h['yearSigma'], `${p}.yearSigma`, ...NON_NEGATIVE),
+      waterValueSlope: numIn(h['waterValueSlope'], `${p}.waterValueSlope`, 0, 50),
+      waterValueRefFactor: numIn(h['waterValueRefFactor'], `${p}.waterValueRefFactor`, ...NON_NEGATIVE),
     };
   }
   const floor = num(o['priceFloor'], `${path}.priceFloor`);
@@ -288,34 +340,43 @@ function parseZone(x: unknown, path: string): ZoneInput {
   return {
     id: str(o['id'], `${path}.id`),
     name: str(o['name'], `${path}.name`),
-    latitude: num(o['latitude'], `${path}.latitude`),
-    marketOpen: parseDate(str(o['marketOpen'], `${path}.marketOpen`)),
-    negativePricesFrom: parseDate(str(o['negativePricesFrom'], `${path}.negativePricesFrom`)),
+    latitude: numIn(o['latitude'], `${path}.latitude`, -90, 90),
+    marketOpen: date(o['marketOpen'], `${path}.marketOpen`),
+    negativePricesFrom: date(o['negativePricesFrom'], `${path}.negativePricesFrom`),
     priceFloor: floor,
     priceCap: cap,
-    reserveFraction: num(o['reserveFraction'], `${path}.reserveFraction`),
+    reserveFraction: numIn(o['reserveFraction'], `${path}.reserveFraction`, ...SHARE),
     regulatedPrice: keyframes(o['regulatedPrice'], `${path}.regulatedPrice`),
-    demandTwh: keyframes(o['demandTwh'], `${path}.demandTwh`),
+    demandTwh: keyframes(o['demandTwh'], `${path}.demandTwh`, NON_NEGATIVE),
     demandShape: {
-      seasonalAmplitude: num(shape['seasonalAmplitude'], `${path}.demandShape.seasonalAmplitude`),
-      summerBump: num(shape['summerBump'], `${path}.demandShape.summerBump`),
-      weekendFactor: num(shape['weekendFactor'], `${path}.demandShape.weekendFactor`),
-      dailyNoise: num(shape['dailyNoise'], `${path}.demandShape.dailyNoise`),
+      seasonalAmplitude: numIn(shape['seasonalAmplitude'], `${path}.demandShape.seasonalAmplitude`, -1, 1),
+      summerBump: numIn(shape['summerBump'], `${path}.demandShape.summerBump`, ...NON_NEGATIVE),
+      weekendFactor: numIn(shape['weekendFactor'], `${path}.demandShape.weekendFactor`, ...NON_NEGATIVE),
+      dailyNoise: numIn(shape['dailyNoise'], `${path}.demandShape.dailyNoise`, ...NON_NEGATIVE),
     },
     wind: {
-      meanCf: num(wind['meanCf'], `${path}.wind.meanCf`),
-      seasonalAmplitude: num(wind['seasonalAmplitude'], `${path}.wind.seasonalAmplitude`),
-      dailySigma: num(wind['dailySigma'], `${path}.wind.dailySigma`),
-      hourlySigma: num(wind['hourlySigma'], `${path}.wind.hourlySigma`),
-      yearSigma: num(wind['yearSigma'], `${path}.wind.yearSigma`),
+      meanCf: numIn(wind['meanCf'], `${path}.wind.meanCf`, ...SHARE),
+      seasonalAmplitude: numIn(wind['seasonalAmplitude'], `${path}.wind.seasonalAmplitude`, -1, 1),
+      dailySigma: numIn(wind['dailySigma'], `${path}.wind.dailySigma`, ...NON_NEGATIVE),
+      hourlySigma: numIn(wind['hourlySigma'], `${path}.wind.hourlySigma`, ...NON_NEGATIVE),
+      yearSigma: numIn(wind['yearSigma'], `${path}.wind.yearSigma`, ...NON_NEGATIVE),
     },
     solar: {
-      meanCf: num(solar['meanCf'], `${path}.solar.meanCf`),
+      meanCf: numIn(solar['meanCf'], `${path}.solar.meanCf`, ...SHARE),
       cloudSeasonal: num(solar['cloudSeasonal'], `${path}.solar.cloudSeasonal`),
-      yearSigma: num(solar['yearSigma'], `${path}.solar.yearSigma`),
+      yearSigma: numIn(solar['yearSigma'], `${path}.solar.yearSigma`, ...NON_NEGATIVE),
     },
     hydro,
   };
+}
+
+function date(x: unknown, path: string): DateYMD {
+  const s = str(x, path);
+  try {
+    return parseDate(s);
+  } catch (err) {
+    return fail(path, err instanceof Error ? err.message : String(err));
+  }
 }
 
 function parseTech(x: unknown, path: string): TechInput {
@@ -331,15 +392,15 @@ function parseTech(x: unknown, path: string): TechInput {
     id,
     kind: kind as TechKind,
     fuel,
-    efficiency: o['efficiency'] === undefined ? [[1995, 1]] : keyframes(o['efficiency'], `${path}.efficiency`),
-    emissionFactor: optNum(o, 'emissionFactor', path, 0),
-    variableOm: optNum(o, 'variableOm', path, 0),
-    availability: optNum(o, 'availability', path, 1),
-    mustRunShare: optNum(o, 'mustRunShare', path, 0),
+    efficiency: o['efficiency'] === undefined ? [[1995, 1]] : keyframes(o['efficiency'], `${path}.efficiency`, [0, 1], 'lo'),
+    emissionFactor: optNum(o, 'emissionFactor', path, 0, NON_NEGATIVE),
+    variableOm: optNum(o, 'variableOm', path, 0, NON_NEGATIVE),
+    availability: optNum(o, 'availability', path, 1, SHARE),
+    mustRunShare: optNum(o, 'mustRunShare', path, 0, SHARE),
     mustRunBid: optNum(o, 'mustRunBid', path, 0),
-    storageHours: optNum(o, 'hours', path, 0),
-    roundTripEfficiency: optNum(o, 'roundTripEfficiency', path, 1),
-    meanCf: optNum(o, 'meanCf', path, 0),
+    storageHours: optNum(o, 'hours', path, 0, NON_NEGATIVE),
+    roundTripEfficiency: optNum(o, 'roundTripEfficiency', path, 1, [0, 1], 'lo'),
+    meanCf: optNum(o, 'meanCf', path, 0, SHARE),
     bid: optNum(o, 'bid', path, 0),
   };
   if (kind === 'storage' && (t.storageHours <= 0 || t.roundTripEfficiency <= 0 || t.roundTripEfficiency > 1)) {
@@ -377,8 +438,8 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
   requireStatus(fuelsFile, 'fuels');
   const fuelsObj = obj(fuelsFile['fuels'], 'fuels.fuels');
   const fuels = new Map<FuelId, Keyframes>();
-  for (const f of FUELS) fuels.set(f, keyframes(fuelsObj[f], `fuels.fuels.${f}`));
-  const co2 = keyframes(fuelsFile['co2'], 'fuels.co2');
+  for (const f of FUELS) fuels.set(f, keyframes(fuelsObj[f], `fuels.fuels.${f}`, NON_NEGATIVE));
+  const co2 = keyframes(fuelsFile['co2'], 'fuels.co2', NON_NEGATIVE);
 
   const capFile = obj(raw.capacity, 'capacity');
   requireStatus(capFile, 'capacity');
@@ -391,7 +452,7 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
       const zo = obj(zc, `capacity.capacity.${z.id}`);
       for (const [k, v] of Object.entries(zo)) {
         const tid = techId(k, `capacity.capacity.${z.id}.${k}`);
-        perZone.set(tid, keyframes(v, `capacity.capacity.${z.id}.${k}`));
+        perZone.set(tid, keyframes(v, `capacity.capacity.${z.id}.${k}`, NON_NEGATIVE));
       }
     }
     capacity.set(z.id, perZone);
@@ -404,7 +465,7 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
       if (!zoneIds.has(zid)) fail(`capacity.mustRunOverrides.${zid}`, 'unknown zone');
       const m = new Map<TechId, number>();
       for (const [k, v] of Object.entries(obj(techs, `capacity.mustRunOverrides.${zid}`))) {
-        m.set(techId(k, `capacity.mustRunOverrides.${zid}.${k}`), num(v, `capacity.mustRunOverrides.${zid}.${k}`));
+        m.set(techId(k, `capacity.mustRunOverrides.${zid}.${k}`), numIn(v, `capacity.mustRunOverrides.${zid}.${k}`, ...SHARE));
       }
       mustRunOverrides.set(zid, m);
     }
@@ -418,7 +479,7 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
     const to = str(o['to'], `links.links[${i}].to`);
     if (!zoneIds.has(from) || !zoneIds.has(to)) fail(`links.links[${i}]`, 'link endpoint is not a zone');
     if (from === to) fail(`links.links[${i}]`, 'link joins a zone to itself');
-    return { id: str(o['id'], `links.links[${i}].id`), from, to, capacityMw: keyframes(o['capacityMw'], `links.links[${i}].capacityMw`) };
+    return { id: str(o['id'], `links.links[${i}].id`), from, to, capacityMw: keyframes(o['capacityMw'], `links.links[${i}].capacityMw`, NON_NEGATIVE) };
   });
 
   const supportFile = obj(raw.support, 'support');
@@ -432,8 +493,8 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
       const p = `support.support.${zid}.${k}`;
       const so = obj(v, p);
       m.set(techId(k, p), {
-        premiumPerMwh: keyframes(so['premiumPerMwh'], `${p}.premiumPerMwh`),
-        flexShare: keyframes(so['flexShare'], `${p}.flexShare`),
+        premiumPerMwh: keyframes(so['premiumPerMwh'], `${p}.premiumPerMwh`, NON_NEGATIVE),
+        flexShare: keyframes(so['flexShare'], `${p}.flexShare`, SHARE),
       });
     }
     support.set(zid, m);
@@ -447,7 +508,7 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
   const matrix = (x: unknown, path: string): number[][] => {
     const rows = arr(x, path);
     if (rows.length !== n) fail(path, `expected ${n} rows`);
-    const m = rows.map((r, i) => numbers(r, `${path}[${i}]`, n));
+    const m = rows.map((r, i) => numbers(r, `${path}[${i}]`, n, [-1, 1]));
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         const a = m[i]?.[j] ?? NaN;
@@ -462,12 +523,13 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
     zoneOrder,
     windCorrelation: matrix(wf['windCorrelation'], 'weather.windCorrelation'),
     solarCorrelation: matrix(wf['solarCorrelation'], 'weather.solarCorrelation'),
-    windSolarCorrelation: num(wf['windSolarCorrelation'], 'weather.windSolarCorrelation'),
-    windDailyPhi: num(wf['windDailyPhi'], 'weather.windDailyPhi'),
-    windHourlyPhi: num(wf['windHourlyPhi'], 'weather.windHourlyPhi'),
-    cloudDailyPhi: num(wf['cloudDailyPhi'], 'weather.cloudDailyPhi'),
-    inflowDailyPhi: num(wf['inflowDailyPhi'], 'weather.inflowDailyPhi'),
-    inflowDailySigma: num(wf['inflowDailySigma'], 'weather.inflowDailySigma'),
+    windSolarCorrelation: numIn(wf['windSolarCorrelation'], 'weather.windSolarCorrelation', -1, 1),
+    // Persistence (AR(1)) coefficients must be in [0, 1): 1 or more makes √(1 − φ²) NaN.
+    windDailyPhi: numIn(wf['windDailyPhi'], 'weather.windDailyPhi', 0, 1, 'hi'),
+    windHourlyPhi: numIn(wf['windHourlyPhi'], 'weather.windHourlyPhi', 0, 1, 'hi'),
+    cloudDailyPhi: numIn(wf['cloudDailyPhi'], 'weather.cloudDailyPhi', 0, 1, 'hi'),
+    inflowDailyPhi: numIn(wf['inflowDailyPhi'], 'weather.inflowDailyPhi', 0, 1, 'hi'),
+    inflowDailySigma: numIn(wf['inflowDailySigma'], 'weather.inflowDailySigma', ...NON_NEGATIVE),
   };
 
   return { status, firstYear, lastYear, zones, technologies, fuels, co2, capacity, mustRunOverrides, links, support, weather };

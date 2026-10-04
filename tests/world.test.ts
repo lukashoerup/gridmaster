@@ -247,9 +247,11 @@ describe('determinism', () => {
 /**
  * Golden hash of seed 42, year 2019, fresh world. Recompute after any intended change to the model or the placeholder data.
  * History: 18e65696d6daa883 (first build); f760731eca2d0449 (2026-10-04, F1: fixed links no longer throttled to the importer's demand);
- * 8ff7768adee91c59 (2026-10-04, F15: storage starts empty; the water value's anchor is summed afresh from its window).
+ * 8ff7768adee91c59 (2026-10-04, F15: storage starts empty; the water value's anchor is summed afresh from its window);
+ * e0003bc8c6be7e77 (2026-10-04, F5 demand noise per full zone id, F8 storage bid gap, F16 wind mean after clipping,
+ * B3 storage window on the computed price, B7 daily fuel/carbon path and daily target fill).
  */
-const GOLDEN_HASH_2019_SEED_42 = '8ff7768adee91c59';
+const GOLDEN_HASH_2019_SEED_42 = 'e0003bc8c6be7e77';
 
 describe('capacity additions', () => {
   it('adds capacity from a given year and affects the result', () => {
@@ -271,6 +273,41 @@ describe('capacity additions', () => {
     expect(() => w.addCapacity('DE', 'fusion' as never, 1)).toThrow();
     expect(() => w.addCapacity('DE', 'solar', -1)).toThrow();
     expect(() => w.addCapacity('DE', 'solar', NaN)).toThrow();
+  });
+
+  it('F9: checks the year, the size ceiling and that hydro has water to use', () => {
+    const w = world(1);
+    for (const y of [NaN, Infinity, -Infinity, 2020.5, 1990, 2026, '2020' as unknown as number]) {
+      expect(() => w.addCapacity('DK1', 'solar', 1000, y), String(y)).toThrow(/fromYear must be an integer in 1995…2025/);
+    }
+    expect(() => w.addCapacity('DE', 'battery', 1e308)).toThrow(/finite|exceed/);
+    expect(() => w.addCapacity('DE', 'battery', Infinity)).toThrow(/finite/);
+    expect(() => w.addCapacity('DE', 'wind', 1.1e7)).toThrow(/exceed 10000000 MW/);
+    w.addCapacity('DE', 'wind', 6e6);
+    expect(() => w.addCapacity('DE', 'wind', 6e6)).toThrow(/exceed/); // cumulative
+    expect(() => w.addCapacity('DK1', 'hydro_res', 5000)).toThrow(/no reservoir/);
+    expect(() => w.addCapacity('DK1', 'hydro_ror', 5000)).toThrow(/no run-of-river profile/);
+    expect(() => w.addCapacity('DE', 'hydro_res', 5000)).toThrow(/no reservoir/);
+    // Allowed: run-of-river follows Norway's inflow, or Germany's own (flat) run-of-river fleet.
+    w.addCapacity('NO', 'hydro_ror', 1000);
+    w.addCapacity('DE', 'hydro_ror', 1000);
+    w.addCapacity('NO', 'hydro_res', 1000, 2020);
+    expect(w.capacityMw('NO', 'hydro_res', 2019)).toBeLessThan(w.capacityMw('NO', 'hydro_res', 2020));
+  });
+
+  it('F9: added run-of-river in Norway follows the inflow, not a flat line', () => {
+    const w = world(5);
+    w.addCapacity('NO', 'hydro_ror', 5000);
+    const no = w.simulateYear(2020).byZone['NO'];
+    const g = no?.generation['hydro_ror'];
+    if (g === undefined) throw new Error('no run-of-river');
+    let min = Infinity;
+    let max = -Infinity;
+    for (const v of g) {
+      min = Math.min(min, v);
+      max = Math.max(max, v);
+    }
+    expect(max / min).toBeGreaterThan(2);
   });
 });
 
@@ -456,6 +493,112 @@ describe('world state: snapshot and restore (stress F3, F12, F15)', () => {
     expect(world(4294967295).seed).toBe(4294967295);
     for (const seed of [-1, 4294967296, 2 ** 53, 1.9, NaN, Infinity, -Infinity]) {
       expect(() => world(seed), String(seed)).toThrow(/seed must be an integer in 0…4294967295/);
+    }
+  });
+});
+
+describe('stress-test and analyst findings in the core (Group 3)', () => {
+  it('F4: capture rates are null when the year’s mean price is at or below 1 €/MWh', () => {
+    const w = world(4);
+    w.addCapacity('DK1', 'wind', 500_000);
+    const dk1 = w.simulateYear(2025).byZone['DK1'];
+    if (dk1 === undefined) throw new Error('no DK1');
+    expect(dk1.stats.meanPrice).toBeLessThanOrEqual(1);
+    for (const t of Object.values(dk1.stats.byTech)) expect(t.captureRate).toBeNull();
+  });
+
+  it('F6: sizes the clearing engine from the inputs, so 40 zones run (was a crash from 17)', () => {
+    const raw = structuredClone(placeholderRaw) as unknown as Record<string, any>; // free-form JSON
+    const de = raw['zones'].zones.find((z: { id: string }) => z.id === 'DE');
+    const ids = Array.from({ length: 40 }, (_, i) => `Z${String(i).padStart(2, '0')}`);
+    raw['zones'].zones = ids.map((id) => ({ ...structuredClone(de), id, name: id }));
+    raw['capacity'].capacity = Object.fromEntries(ids.map((id) => [id, structuredClone(raw['capacity'].capacity.DE)]));
+    raw['capacity'].mustRunOverrides = {};
+    raw['support'].support = Object.fromEntries(ids.map((id) => [id, structuredClone(raw['support'].support.DE)]));
+    raw['links'].links = [];
+    raw['weather'].zoneOrder = ids;
+    const identity = ids.map((_, i) => ids.map((__, j) => (i === j ? 1 : 0)));
+    raw['weather'].windCorrelation = identity;
+    raw['weather'].solarCorrelation = identity;
+    const i40 = validateInputs(raw as never);
+    const t0 = performance.now();
+    const r = new World(i40, new SyntheticWeather(i40), 1).simulateYear(2019);
+    console.log(`speed: one year, 40 unlinked DE-sized zones: ${(performance.now() - t0).toFixed(0)} ms`);
+    expect(r.zones.length).toBe(40);
+    checkInvariants(r);
+  });
+
+  it('F8: storage never charges and discharges in the same hour, even at deeply negative prices', () => {
+    const both = (r: YearResult): number => {
+      let n = 0;
+      for (const zid of r.zones) {
+        const z = r.byZone[zid];
+        if (z === undefined) continue;
+        for (const [t, c] of Object.entries(z.charging)) {
+          const g = z.generation[t];
+          if (g === undefined) continue;
+          for (let h = 0; h < r.hours; h++) if ((c[h] ?? 0) > 1e-6 && (g[h] ?? 0) > 1e-6) n++;
+        }
+      }
+      return n;
+    };
+    const windy = world(1);
+    windy.addCapacity('DE', 'wind', 500_000);
+    expect(both(windy.simulateYear(2012))).toBe(0); // was 1,668 hours
+    const raw = structuredClone(placeholderRaw) as unknown as { zones: { zones: { demandTwh: [number, number][] }[] } };
+    for (const z of raw.zones.zones) z.demandTwh = [[1995, 0]];
+    const idle = validateInputs(raw as never);
+    expect(both(new World(idle, new SyntheticWeather(idle), 1).simulateYear(2009))).toBe(0); // was 8,696 hours
+  });
+
+  it('B3: storage reads the computed market price, so it trades before the market opens', () => {
+    const r = world(42).simulateYear(1999);
+    const de = r.byZone['DE'];
+    if (de === undefined) throw new Error('no DE');
+    expect(de.marketOpenFromHour).toBe(r.hours); // regulated all year
+    let charged = 0;
+    let discharged = 0;
+    for (let h = 0; h < r.hours; h++) {
+      charged += de.charging['pumped']?.[h] ?? 0;
+      discharged += de.generation['pumped']?.[h] ?? 0;
+    }
+    expect(charged).toBeGreaterThan(100_000); // MWh; was 0 while it read the flat tariff
+    expect(discharged).toBeGreaterThan(0);
+  });
+
+  it('B7: Norway’s price does not jump on the 1st of a month', () => {
+    const no = world(42).simulateYear(2010).byZone['NO'];
+    if (no === undefined) throw new Error('no NO');
+    const days = no.hours / 24;
+    const daily: number[] = [];
+    for (let d = 0; d < days; d++) {
+      let s = 0;
+      for (let h = 0; h < 24; h++) s += no.price[d * 24 + h] ?? 0;
+      daily.push(s / 24);
+    }
+    const firsts = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => hourOfYear({ year: 2010, month: m, day: 1 }) / 24));
+    let onFirst = 0;
+    let nFirst = 0;
+    let other = 0;
+    let nOther = 0;
+    for (let d = 1; d < days; d++) {
+      const step = Math.abs((daily[d] ?? 0) - (daily[d - 1] ?? 0));
+      if (firsts.has(d)) {
+        onFirst += step;
+        nFirst++;
+      } else {
+        other += step;
+        nOther++;
+      }
+    }
+    // Was 10.4 vs 1.2 €/MWh across seeds (analyst table M).
+    expect(onFirst / nFirst).toBeLessThan(3 * (other / nOther) + 0.5);
+  });
+
+  it('B7: fuel and carbon costs do not step at New Year', () => {
+    const w = world(1);
+    for (const t of ['gas_ccgt', 'coal', 'lignite'] as const) {
+      for (let y = 2019; y < 2025; y++) expect(w.marginalCost(t, y, 1), `${t} ${y}`).toBeCloseTo(w.marginalCost(t, y + 1, 0), 9);
     }
   });
 });

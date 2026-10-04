@@ -24,10 +24,10 @@
  * the new capacity is dropped at 1 January, and storage that disappears
  * takes its charge with it.
  */
-import { hourFromDate, hoursInYear, monthOfDay } from './calendar';
+import { dailyFromMonthly, daysInYear, hourFromDate, hoursInYear } from './calendar';
 import { demandSeries } from './demand';
 import { Hasher } from './hash';
-import { TECHS, interp, type Keyframes, type TechId, type WorldInputs, type ZoneId } from './inputs';
+import { TECHS, annualPath, interp, type TechId, type TechKind, type WorldInputs, type ZoneId } from './inputs';
 import { ClearingEngine, TRANCHE, type LinkSpec } from './market';
 import { zoneStats, type ZoneStats } from './stats';
 import type { WeatherSource, WeatherYear } from './weather';
@@ -283,20 +283,8 @@ const STORAGE_TECHS = ['pumped', 'battery'] as const;
 /** Largest seed: seeds are unsigned 32-bit integers. */
 export const MAX_SEED = 4294967295;
 
-/**
- * An annual value for a month of the year: the year's value, blended towards
- * the previous year in January–February and the next in November–December,
- * so the annual mean is nearly preserved while New Year is not a step.
- */
-function blendAnnual(kf: Keyframes, year: number, month?: number): number {
-  const v = interp(kf, year);
-  if (month === undefined) return v;
-  if (month === 1) return 0.75 * v + 0.25 * interp(kf, year - 1);
-  if (month === 2) return 0.9 * v + 0.1 * interp(kf, year - 1);
-  if (month === 11) return 0.9 * v + 0.1 * interp(kf, year + 1);
-  if (month === 12) return 0.75 * v + 0.25 * interp(kf, year + 1);
-  return v;
-}
+/** Largest capacity `addCapacity` accepts for one zone and technology (MW): 10 TW. */
+export const MAX_ADDED_MW = 1e7;
 
 /** Share of a thermal fleet and its efficiency relative to the technology average. */
 const THERMAL_TRANCHES: readonly (readonly [number, number])[] = [
@@ -304,6 +292,15 @@ const THERMAL_TRANCHES: readonly (readonly [number, number])[] = [
   [0.4, 1.0],
   [0.3, 1.15],
 ];
+
+/** Most supply blocks one technology offers per zone and hour (sizes the clearing engine). */
+const BLOCKS_PER_TECH: Readonly<Record<TechKind, number>> = {
+  thermal: 1 + THERMAL_TRANCHES.length, // must-run + tranches
+  hydro_ror: 1,
+  hydro_res: 4, // forced + three water-value tranches
+  storage: 1, // discharge (charging is a demand block)
+  variable: 2, // flexible + supported
+};
 
 export class World {
   readonly inputs: WorldInputs;
@@ -325,18 +322,47 @@ export class World {
     this.weather = weather;
     this.seed = seed;
     inputs.zones.forEach((z, i) => this.zoneIndex.set(z.id, i));
-    this.engine = new ClearingEngine(inputs.zones.length);
+    // Size the engine from the inputs: any zone may hold any technology (additions included).
+    let blocksPerZone = 0;
+    let chargesPerZone = 0;
+    for (const t of inputs.technologies.values()) {
+      blocksPerZone += BLOCKS_PER_TECH[t.kind];
+      if (t.kind === 'storage') chargesPerZone++;
+    }
+    const nz = inputs.zones.length;
+    this.engine = new ClearingEngine(nz, nz * blocksPerZone, nz * chargesPerZone);
     for (const z of inputs.zones) {
       this.windows.set(z.id, new PriceWindow(STORAGE_WINDOW_HOURS));
       this.neighbourPrice.set(z.id, new RollingMean(WATER_VALUE_WINDOW_HOURS));
     }
   }
 
-  /** Extra capacity on top of the data: the hook for the player's assets and the explorer's slider. */
-  addCapacity(zone: ZoneId, tech: TechId, mw: number, fromYear = -Infinity): void {
-    if (!this.zoneIndex.has(zone)) throw new Error(`unknown zone ${zone}`);
+  /**
+   * Extra capacity on top of the data, from `fromYear` on (default: the first
+   * year of the inputs): the hook for the player's assets and the explorer's
+   * slider. Rejected: unknown zones or technologies; sizes that are negative,
+   * not finite or that would take the zone's additions of that technology
+   * above `MAX_ADDED_MW`; a `fromYear` that is not an integer in the inputs'
+   * range; reservoir hydro in a zone without a reservoir; run-of-river in a
+   * zone with no run-of-river profile (neither an inflow series from a
+   * reservoir nor run-of-river plant of its own to follow).
+   */
+  addCapacity(zone: ZoneId, tech: TechId, mw: number, fromYear: number = this.inputs.firstYear): void {
+    const z = this.inputs.zones.find((x) => x.id === zone);
+    if (z === undefined) throw new Error(`unknown zone ${zone}`);
     if (!TECH_INDEX.has(tech)) throw new Error(`unknown technology ${tech}`);
-    if (!(mw >= 0) || !Number.isFinite(mw)) throw new Error('capacity must be a finite non-negative number');
+    if (typeof mw !== 'number' || !Number.isFinite(mw) || mw < 0) throw new Error(`capacity must be a finite non-negative number of MW, got ${mw}`);
+    let already = 0;
+    for (const a of this.additions) if (a.zone === zone && a.tech === tech) already += a.mw;
+    if (already + mw > MAX_ADDED_MW) throw new Error(`capacity added to ${zone} ${tech} would exceed ${MAX_ADDED_MW} MW`);
+    const { firstYear, lastYear } = this.inputs;
+    if (!Number.isInteger(fromYear) || fromYear < firstYear || fromYear > lastYear) {
+      throw new Error(`fromYear must be an integer in ${firstYear}…${lastYear}, got ${fromYear}`);
+    }
+    if (tech === 'hydro_res' && z.hydro === null) throw new Error(`${zone} has no reservoir, so reservoir hydro cannot be added there`);
+    if (tech === 'hydro_ror' && z.hydro === null && !this.inputs.capacity.get(zone)?.has('hydro_ror')) {
+      throw new Error(`${zone} has no run-of-river profile (no inflow series and no run-of-river plant), so run-of-river cannot be added there`);
+    }
     this.additions.push({ zone, tech, mw, fromYear });
   }
 
@@ -428,16 +454,19 @@ export class World {
   }
 
   /**
-   * Marginal cost of a thermal technology (€/MWh electric) for a year, or for
-   * one month of it (1–12): annual fuel and carbon prices are blended with
-   * the neighbouring year's around New Year so costs do not step on 1 January.
+   * Marginal cost of a thermal technology (€/MWh electric) for a year, or at
+   * a point within it (`fraction` 0 = 1 January … 1 = 31 December): fuel and
+   * carbon follow `annualPath`, continuous across New Year and averaging to
+   * each year's input value; efficiency is read at the same point in time.
    */
-  marginalCost(tech: TechId, year: number, month?: number): number {
+  marginalCost(tech: TechId, year: number, fraction?: number): number {
     const t = this.inputs.technologies.get(tech);
     if (t === undefined || t.kind !== 'thermal' || t.fuel === null) return 0;
-    const fuel = blendAnnual(this.inputs.fuels.get(t.fuel) ?? [], year, month);
-    const co2 = blendAnnual(this.inputs.co2, year, month);
-    const eff = Math.max(0.05, interp(t.efficiency, year));
+    const fuelKf = this.inputs.fuels.get(t.fuel) ?? [];
+    const fuel = fraction === undefined ? interp(fuelKf, year) : annualPath(fuelKf, year, fraction);
+    const co2 = fraction === undefined ? interp(this.inputs.co2, year) : annualPath(this.inputs.co2, year, fraction);
+    // Fleet efficiency drifts linearly through the year (keyframe years read as mid-year), so it does not step either.
+    const eff = Math.max(0.05, interp(t.efficiency, fraction === undefined ? year : year + fraction - 0.5));
     return fuel / eff + (co2 * t.emissionFactor) / eff + t.variableOm;
   }
 
@@ -453,15 +482,16 @@ export class World {
     if (weather.hours !== hours) throw new Error(`weather year has ${weather.hours} hours, expected ${hours}`);
     const engine = this.engine;
 
-    // Marginal costs by month: annual keyframes are interpolated through the
-    // year so fuel moves gradually rather than in a New Year step.
-    const mcByMonth: Map<TechId, number>[] = [];
-    const cheapestByMonth: number[] = [];
-    for (let m = 1; m <= 12; m++) {
+    // Marginal costs by day: fuel and carbon follow a continuous path through
+    // the annual values, so costs move gradually and do not step at New Year.
+    const days = daysInYear(year);
+    const mcByDay: Map<TechId, number>[] = [];
+    const cheapestByDay: number[] = [];
+    for (let d = 0; d < days; d++) {
       const mc = new Map<TechId, number>();
-      for (const t of TECHS) mc.set(t, this.marginalCost(t, year, m));
-      mcByMonth.push(mc);
-      cheapestByMonth.push(Math.max(3, Math.min(mc.get('coal') ?? Infinity, mc.get('gas_ccgt') ?? Infinity)));
+      for (const t of TECHS) mc.set(t, this.marginalCost(t, year, (d + 0.5) / days));
+      mcByDay.push(mc);
+      cheapestByDay.push(Math.max(3, Math.min(mc.get('coal') ?? Infinity, mc.get('gas_ccgt') ?? Infinity)));
     }
 
     const demand = zones.map((z) => demandSeries(z, year, this.seed));
@@ -518,6 +548,9 @@ export class World {
     zones.forEach((z, i) => {
       if (z.hydro !== null && !this.reservoir.has(z.id)) this.reservoir.set(z.id, z.hydro.initialFill * (hydroCapMwh[i] ?? 0));
     });
+    // Reservoir target fill per day: monthly targets read as mid-month values
+    // and interpolated, so the water value does not jump on the 1st.
+    const targetByDay = zones.map((z) => (z.hydro === null ? null : dailyFromMonthly(z.hydro.targetFill, year)));
     const resTech = inputs.technologies.get('hydro_res');
     const rorTech = inputs.technologies.get('hydro_ror');
     if (resTech === undefined || rorTech === undefined) throw new Error('hydro technologies missing');
@@ -601,10 +634,9 @@ export class World {
 
     for (let h = 0; h < hours; h++) {
       const doy = Math.floor(h / 24);
-      const month = monthOfDay(year, doy);
       const winterness = (1 + Math.cos((2 * Math.PI * (doy - 15)) / 365.25)) / 2;
-      const mc = mcByMonth[month - 1] ?? new Map<TechId, number>();
-      const cheapestThermal = cheapestByMonth[month - 1] ?? 3;
+      const mc = mcByDay[doy] ?? new Map<TechId, number>();
+      const cheapestThermal = cheapestByDay[doy] ?? 3;
 
       engine.beginHour();
       for (let zi = 0; zi < nz; zi++) {
@@ -646,6 +678,7 @@ export class World {
               break;
             }
             case 'hydro_ror': {
+              // Follows the zone's inflow where it has a reservoir; flat at its mean capacity factor otherwise.
               const f = weather.inflow[z.id]?.[h] ?? 1;
               engine.addBlock(zi, ti, TRANCHE.MUST_RUN, tech.bid, Math.min(mw, mw * tech.meanCf * f));
               break;
@@ -661,7 +694,7 @@ export class World {
               const availFromLevel = Math.max(0, level + inflow - (hydroMinMwh[zi] ?? 0));
               const avail = Math.min(genCap, availFromLevel);
               const fill = capMwh > 0 ? level / capMwh : 0;
-              const target = z.hydro.targetFill[month - 1] ?? 0.5;
+              const target = targetByDay[zi]?.[doy] ?? 0.5;
               // Water is worth what it would fetch: the recent price of the linked
               // zones, or the cheapest thermal cost where there is no link yet.
               const anchor = this.neighbourPrice.get(z.id);
@@ -670,10 +703,8 @@ export class World {
                 hasNeighbours && anchor !== undefined && anchor.length >= WATER_VALUE_WARMUP_HOURS ? anchor.mean() : cheapestThermal;
               // Near a full reservoir water is about to be spilled, so its value collapses.
               const spillRisk = fill > 0.9 ? Math.max(0, (1 - fill) / 0.1) : 1;
-              const wv = Math.min(
-                z.priceCap,
-                Math.max(0, z.hydro.waterValueRefFactor * ref) * Math.exp(z.hydro.waterValueSlope * (target - fill)) * spillRisk,
-              );
+              const base = Math.max(0, z.hydro.waterValueRefFactor * ref) * spillRisk;
+              const wv = base > 0 ? Math.min(z.priceCap, base * Math.exp(Math.min(700, z.hydro.waterValueSlope * (target - fill)))) : 0;
               if (forced > 0) engine.addBlock(zi, ti, TRANCHE.HYDRO_FORCED, Math.max(floor, tech.bid), forced);
               const flexible = Math.max(0, avail - forced);
               if (flexible > 0) {
@@ -690,8 +721,12 @@ export class World {
               const soc = this.soc.get(sp.key) ?? 0;
               const p25 = history.percentile(0.25);
               const p75 = history.percentile(0.75);
-              const dischargeBid = Math.max(p75, (p25 + STORAGE_MIN_SPREAD) / sp.rt);
-              const chargeWtp = Math.min(p25, p75 * sp.rt - STORAGE_MIN_SPREAD);
+              // Buy below the window's 25th percentile, sell above its 75th, and
+              // never both in one hour: the sell bid stays at least the minimum
+              // spread above the buy bid at every price level (at deeply negative
+              // prices (p25 + spread) / rt alone would fall below p25).
+              const chargeWtp = Math.min(z.priceCap, Math.max(floor, Math.min(p25, p75 * sp.rt - STORAGE_MIN_SPREAD)));
+              const dischargeBid = Math.max(p75, (p25 + STORAGE_MIN_SPREAD) / sp.rt, chargeWtp + STORAGE_MIN_SPREAD);
               const discharge = Math.min(sp.powerMw, soc * sp.etaD);
               if (discharge > 0) engine.addBlock(zi, ti, TRANCHE.STORAGE, dischargeBid, discharge);
               const charge = Math.min(sp.powerMw, (sp.energyMwh - soc) / sp.etaC);
@@ -781,7 +816,9 @@ export class World {
           if (inf !== null && inf !== undefined) inf[h] = inflow;
           if (sp !== null && sp !== undefined) sp[h] = spill;
         }
-        this.windows.get(z.id)?.push(price[zi]?.[h] ?? 0);
+        // Storage reads the computed market price, also before the market opens
+        // (the regulated tariff is flat and would leave it idle).
+        this.windows.get(z.id)?.push(marginalPrice[zi]?.[h] ?? 0);
         const nw = neighbourWeights[zi];
         if (z.hydro !== null && nw !== undefined && nw.length > 0) {
           let sum = 0;

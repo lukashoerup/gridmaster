@@ -141,21 +141,26 @@ re-cleared; a link that ends up flowing from the dearer zone is released and
 re-solved (up to three times per link and hour). Uncongested zones therefore
 share one price exactly, held inside the highest floor and lowest cap of the
 group.
-**Water value:** ref × exp(4 × (monthly target fill − fill)), collapsing
+**Water value:** ref × exp(4 × (target fill − fill)), collapsing
 above 90 % fill; ref is the trailing 30-day capacity-weighted price of the
 linked zones (the cheapest thermal cost for Spain, which has no link), times
-a zone factor. Three tranches at 0.8/1.0/1.3 × value; forced output when the
-reservoir would overflow. **Storage:** charge below the rolling 25th
-percentile, discharge above the 75th, over the last 168 hours, with a
-minimum spread; charging is a price-sensitive demand block, discharge a
-supply block, so storage sets the price when marginal. Money: no ledger yet
+a zone factor; the twelve monthly targets are read as mid-month values and
+interpolated daily. Three tranches at 0.8/1.0/1.3 × value; forced output
+when the reservoir would overflow. **Storage:** charge below the rolling
+25th percentile, discharge above the 75th, of the computed market price over
+the last 168 hours, with a minimum spread that also holds between the two
+bids, so a plant never buys and sells in the same hour; charging is a
+price-sensitive demand block, discharge a supply block, so storage sets the
+price when marginal. **Fuel and carbon** follow a continuous path through
+the annual values (no New Year step; each year averages to its input). Money: no ledger yet
 (nothing is bought or sold in the toy); the rule "integer cents" applies
 when Phase 2 adds one.
 
 **Speed measured.** One simulated year, four zones, including statistics:
 median 0.45–0.50 s over five runs in Node 22 on the session's container
-(min 0.40 s, max 0.72 s). Target < 1 s met. Thirty-one years in sequence:
-12.3 s. `npm run bench` prints the per-year figure.
+(min 0.40 s, max 0.72 s); 0.47 s after the tester fixes. Target < 1 s met.
+Thirty-one years in sequence: 12.3 s. `npm run bench` prints the per-year
+figure.
 
 **Determinism.** `hashYearResult` (two FNV-1a streams over prices, dispatch,
 flows, storage, reservoir) is identical across runs and differs by seed;
@@ -306,4 +311,52 @@ from the report's reproduction where there was one.
   wrapped. The explorer only offers that range (see the explorer fixes).
 - Golden hash: `f760731eca2d0449` → `8ff7768adee91c59` (storage starts
   empty; anchor mean summed afresh). Speed: median 447 ms per year (was 411).
+
+**Smaller core fixes.**
+- F4: `captureRate` is `null` when the year's mean price is at or below
+  1 €/MWh (`CAPTURE_RATE_MIN_MEAN_PRICE`); the explorer shows a gap or "–".
+- F5: the demand-noise stream id hashes the whole zone id (`hashString`,
+  FNV-1a then mixed): DK1, DK2, DXX, SE1–4 and NO1–5 all differ.
+- F6: `World` sizes the engine from the technologies (39 blocks and 2
+  charges per zone; any zone may hold any technology through additions); the
+  engine's own defaults scale with the zone count. 40 unlinked DE-sized
+  zones: 3.8 s per year. Not optimised (F14, follow-up): 14 zones in a chain
+  6.7 s, 40 in a chain 56.5 s, 17 unlinked 1.4 s.
+- F8: the discharge bid is at least the minimum spread above the charge bid
+  at every price level (after the floor clamp), so no plant charges and
+  discharges in one hour: DE +500 GW wind 2012, 1,668 → 0 hours; zero
+  demand 2009, 8,696 → 0.
+- F9: `addCapacity` checks `fromYear` (integer in the inputs' range,
+  default the first year), the size (finite, ≥ 0, a zone's additions of one
+  technology ≤ 1e7 MW), reservoir hydro only where a reservoir exists, and
+  run-of-river only where there is a profile to follow (the zone's inflow,
+  or its own run-of-river fleet, which runs flat in DE's placeholder data).
+- F10: the validator range-checks shares and fills (0..1), persistence
+  coefficients ([0, 1)), demand, capacities, links, fuel prices, reservoir
+  and inflow (≥ 0), seasonal amplitudes (±1), must-run overrides (0..1),
+  `reserveFraction` (0..1), the water-value slope (0..50), efficiencies
+  ((0, 1]), correlations (±1), latitude, and real calendar dates
+  (`parseDate` rejects 1999-02-31 and 1999-02-29).
+- F16 (rest): `stdPrice` is two-pass over prices shifted by the first one (a
+  flat 2,999.99 gives exactly 0); `normaliseMean` raises the scale until the
+  mean after the 0.98 wind clip equals the target (realised wind CF was up
+  to ~2 % low).
+- B3: storage's price window reads the computed market price, not the
+  regulated participant price. DE pumped storage now trades in 1999 (1.8 TWh
+  charged, seed 42); 1995–1998 stay idle because the computed DE price is too
+  flat in those years for a 75 % round trip plus the 2 €/MWh spread (no week
+  qualifies): that is analyst B4, a follow-up, not the window.
+- B7: Norway's target fill is interpolated daily from mid-month values
+  (mean |Δ daily NO price| on the 1st of a month vs other days, seed 42
+  2005–12: 8.65 vs 0.74 → 0.67 vs 0.70). Fuel and CO₂ follow `annualPath`:
+  piecewise linear from 1 January to mid-year to 31 December, continuous at
+  New Year, each year averaging exactly to its input, 1 January value capped
+  so it never goes negative; `blendAnnual` is gone (gas was 66.5 in
+  December 2021 and 105.5 in January 2022; now 86 on both sides). Fleet
+  efficiency is read at the same point in time.
+- Calibration impact (seeds 42 and 1, 1995–2025): Norway's low-price years
+  move by up to 2.6 €/MWh (e.g. NO 2020 seed 42: 10.3 → 8.5), ES 2022 176 →
+  183, DE within 0.5 €/MWh; DE negative hours 2024: 1,164 → 1,169 (seed 42),
+  1,041 → 1,132 (seed 1).
+- Golden hash: `8ff7768adee91c59` → `e0003bc8c6be7e77` (F5, F8, F16, B3, B7).
 

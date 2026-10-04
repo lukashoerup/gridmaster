@@ -80,13 +80,33 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
-/** Scale a series so its mean equals `target`, clamping at `max`. */
-function normaliseMean(series: Float64Array, target: number, max: number): void {
+/**
+ * Scale a series so that its mean, after clipping at `max`, equals `target`.
+ * Clipping (wind output tops out at 0.98 of capacity) removes energy from
+ * the peaks, so the scale is raised until the clipped mean matches; a target
+ * the clipped shape cannot reach ends as close as it gets.
+ */
+export function normaliseMean(series: Float64Array, target: number, max: number): void {
+  const n = series.length;
   let sum = 0;
-  for (let i = 0; i < series.length; i++) sum += series[i] ?? 0;
-  const mean = sum / series.length;
-  const scale = mean > 0 ? target / mean : 0;
-  for (let i = 0; i < series.length; i++) series[i] = Math.min(max, (series[i] ?? 0) * scale);
+  for (let i = 0; i < n; i++) sum += series[i] ?? 0;
+  if (n === 0 || !(sum > 0) || !(target > 0)) {
+    series.fill(0);
+    return;
+  }
+  let scale = target / (sum / n);
+  if (Number.isFinite(max)) {
+    // The clipped mean is concave and increasing in the scale, so this
+    // fixed-point iteration climbs monotonically to the target.
+    for (let it = 0; it < 60; it++) {
+      let clipped = 0;
+      for (let i = 0; i < n; i++) clipped += Math.min(max, (series[i] ?? 0) * scale);
+      const m = clipped / n;
+      if (m >= target * (1 - 1e-12) || m >= max) break;
+      scale *= target / m;
+    }
+  }
+  for (let i = 0; i < n; i++) series[i] = Math.min(max, (series[i] ?? 0) * scale);
 }
 
 export class SyntheticWeather implements WeatherSource {
