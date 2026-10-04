@@ -39,7 +39,8 @@ proven on one zone before Europe is built.
 ### Phase 1 — Market toy: does the simulation feel real? ← paused after the explorer fixes (D18)
 - **Status (2026-10-04):** the core and the explorer exist on placeholder
   data. Real data, calibration and the verification pass are **paused by
-  D18** until the fun-core toy (Q9) has shown a fun core.
+  D18** until round 1 of the fun core (D20) has shown a fun core. The
+  explorer fixes from three testers merged on 2026-10-04 (PR #11).
 - **Build:** the headless simulation core — real weather-years, demand, and
   an hourly merit-order price for four zones (Western Denmark, Germany, Norway,
   Spain), 1995–2025 — plus a web page of charts to explore it from a link on
@@ -60,7 +61,7 @@ proven on one zone before Europe is built.
   shaped the fun core: own power plants on a map of hungry grid hubs; longer
   plans; history as surprises; a 3–4 hour campaign in chapters
   (`docs/design/fun-core.md` v2). Next: round 1, four cheap tests with pass
-  and fail criteria (Q9, `tasks/2026-10-04-fun-core-toy.md`). Then rebuild
+  and fail criteria (approved: D20, `tasks/2026-10-04-fun-core-toy.md`). Then rebuild
   the prototype on whichever core passes. Slice 2 and later wait.
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
