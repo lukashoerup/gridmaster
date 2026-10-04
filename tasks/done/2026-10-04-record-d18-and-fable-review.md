@@ -16,8 +16,9 @@ mixing realism and fun.
 
 ## Acceptance criteria
 - [x] D18 in `docs/decisions.md`; the roadmap's Phase 1 marked paused
-- [ ] The review saved under `docs/reviews/`; its questions for Lukas
-      added to `docs/decisions.md` where they are his
+- [x] The review saved under `docs/reviews/`
+      (`2026-10-04-critical-review-of-fun-core.md`); its questions for Lukas
+      added to `docs/decisions.md` as Q10, and Q9 put on hold
 
 ## Scope
 **May change:** `docs/`, `tasks/`. The reviewer agent is read-only.

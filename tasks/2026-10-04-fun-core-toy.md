@@ -3,8 +3,12 @@ Model: opus — Opus builds everything (workbench `docs/roles.md`).
 # Task: the fun-core toy, "build a power network on a living map"
 
 ## Status
-**Waiting for Q9** (Lukas). Start only once Q9 is answered yes. If he
-changes the core, update this task first.
+**Waiting for Q9 and Q10** (Lukas). The critical review
+(`docs/reviews/2026-10-04-critical-review-of-fun-core.md`) recommends a
+smaller toy, money switched off, a fixed clock, substations, an era
+escalator, pass and fail criteria written first, and a second micro-toy.
+**Rewrite the criteria below from Lukas's answers before starting.** Do
+not build this list as it stands.
 
 ## Goal
 Find out by playing, fast, whether the core proposed in
