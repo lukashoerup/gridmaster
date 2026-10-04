@@ -6,6 +6,20 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D18 — Pause realism work until the fun core is proven (Lukas, 2026-10-04)
+> "Agree."
+
+This answers the suggestion that, once the running Phase 1 session finished
+its explorer fixes, no more realism work would start until the fun-core toy
+(Q9) shows a fun core.
+- **Paused:** Phase 1 parts (b) and (c), the real weather, price and fleet
+  data and the calibration, and the verification pass. The Phase 1 session
+  that was running when this was decided may finish and merge its explorer
+  fixes.
+- **Not paused:** the simulation core stays and may be used as is: its
+  placeholder weather and demand shapes can feed the toy.
+- **Lifted by Lukas** once a fun core is proven, or earlier if he says so.
+
 ### D17 — Fun first; realism takes a back seat (Lukas, 2026-10-04)
 > "I think we should try and hold off a bit on the realism part. I want to
 > focus on making features/game design that is essentially more fun and
@@ -206,7 +220,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17. Q5 (network access) matters again only when D18 is lifted. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 

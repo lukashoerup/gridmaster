@@ -36,7 +36,10 @@ proven on one zone before Europe is built.
 - Still to run: a verification pass on the report's unverified facts, in a
   session with wider network access (Q5; `tasks/`).
 
-### Phase 1 — Market toy: does the simulation feel real? ← now
+### Phase 1 — Market toy: does the simulation feel real? ← paused after the explorer fixes (D18)
+- **Status (2026-10-04):** the core and the explorer exist on placeholder
+  data. Real data, calibration and the verification pass are **paused by
+  D18** until the fun-core toy (Q9) has shown a fun core.
 - **Build:** the headless simulation core — real weather-years, demand, and
   an hourly merit-order price for four zones (Western Denmark, Germany, Norway,
   Spain), 1995–2025 — plus a web page of charts to explore it from a link on
