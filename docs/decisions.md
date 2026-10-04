@@ -6,6 +6,37 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D15 — The goal: lead Europe's energy transition (Lukas, 2026-10-04)
+> "A"
+
+Lukas chose option A in chat, answering Q7 from
+`docs/reviews/2026-10-04-competition-and-goals.md`:
+- **The goal.** The campaign is won by becoming the leading company of
+  Europe's energy transition. That means number one by company value and by
+  renewable output, in a league table against the named rivals and
+  everyone else. Chapter medals stay as designed. Owning the whole market is
+  not a goal.
+- **Rivals.** The three named archetypes (D9) race the player for sites,
+  grid room and tenders. They announce their plans, follow corporate arcs,
+  and sell assets when they overbuild. Example cast: Nordhav (an incumbent
+  turned green that overreaches), a federation of wind co-ops, and an
+  infrastructure fund.
+- **Share cap.** Above about 25% [tuning] of a zone's generation, new builds
+  and purchases there need the competition authority's approval, which
+  comes with a forced sale of capacity to a rival at fair value. The anchor
+  is the 2006 DONG/Elsam remedy: about 2,400 MW sold to Vattenfall. Success
+  therefore pushes growth abroad. Not in the one-zone prototype.
+- **Ranks.** D14's levels continue in the full game: regional champion,
+  then European major, then a top rank. Each opens rights: licences in new
+  countries, tender prequalification, larger loans, departments.
+- **"Fully renewable"** is the sandbox's shared mission to 2050, scored by
+  the player's share of it. Prestige goals such as a windless week carried
+  on renewables stay.
+- **Takeovers** stay later (D9) and arrive first as scenario victories.
+
+Phase 1 and the Phase 2 prototype are unchanged. `docs/vision.md` and the
+first-release table in `docs/roadmap.md` carry the additions.
+
 ### D14 — The prototype gets a reward layer: the review's recommendation (Lukas, 2026-10-04)
 > "Go with your recommendation, including company levels and the rival."
 
@@ -131,7 +162,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
@@ -144,28 +175,6 @@ it in the environment's settings (cloud environment menu → Edit → Network
 access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
-
-### Q7 — The end goal and the competition model (taste and scope; before Phase 3)
-Lukas, 2026-10-04: "should it not be a complete market? … a goal would be to
-take over the entire market, to make it fully renewable? Or what? I am quite
-uncertain as to how we should build the competitive aspect … As well as the
-progressive system." Analysis:
-`docs/reviews/2026-10-04-competition-and-goals.md`. Options:
-- **A. Lead the transition** (recommended). Be number one by company value
-  and renewable output against three named rivals that race the player for
-  sites, grid room and tenders. A competition-authority cap on any one
-  zone's share (anchored on the 2006 DONG/Elsam remedy) pushes growth
-  abroad. A rank ladder continues D14's levels. A fully renewable Europe is
-  the sandbox's shared goal; takeovers stay later (D9) and arrive first as
-  a scenario victory.
-- **B. Take over everything.** Buyouts as the main victory, Offworld-style.
-  Moves the stock market and takeovers into the first release (changes D9).
-- **C. Make it fully renewable.** A mission-first shared goal, CO2-style.
-  Shifts the vision's emphasis; history reaches about 70% wind and solar in
-  Denmark by 2024 without the player.
-
-Not needed for Phase 1 or the Phase 2 prototype, which are the same under
-every option; needed before the Phase 3 rivals are designed.
 
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are

@@ -7,8 +7,8 @@ aspect of the game with rivals and other producers, and how it can be a fun
 factor in the game. As well as the progressive system. How do other games
 do this? Any market simulation/tycoon games that do this?"
 
-**Status:** analysis with a recommendation. The choice is **Q7** in
-`docs/decisions.md`; nothing here is decided. It builds on D9 (the first
+**Status:** Lukas chose option A, the recommendation, the same day:
+**D15** in `docs/decisions.md`. It builds on D9 (the first
 release has three AI rival archetypes competing for sites, auctions and grid
 slots; the stock market and takeovers come later) and on D14 (Nordhav as
 the face of history's build-out in the prototype). It changes nothing in
@@ -163,7 +163,7 @@ Gridmaster can stack four of these, each already half present in the plan:
 - **Not in the one-zone prototype.** It tests nothing there, and a single
   zone cannot offer the way out.
 
-## The decision (Q7)
+## The decision (Q7, answered: D15 = A)
 
 | Option | What it means | Changes |
 |---|---|---|
