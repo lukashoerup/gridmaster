@@ -3,9 +3,11 @@ Model: opus — Opus builds everything (workbench `docs/roles.md`).
 # Task: round 1 of the fun core, four cheap tests
 
 ## Status
-**Built (2026-10-04): (a)–(d); waiting for the playtests.** Approved by D20 ("Go"). The shape is settled by D19. The design
-is `docs/design/fun-core.md` v2, and the reasons are in
-`docs/reviews/2026-10-04-critical-review-of-fun-core.md`. Build (a) first.
+**Done 2026-10-04: (a)–(d) built, previews published, Lukas told what to
+try.** Approved by D20 ("Go"). The shape is settled by D19. The design is
+`docs/design/fun-core.md` v2, and the reasons are in
+`docs/reviews/2026-10-04-critical-review-of-fun-core.md`. Reading the
+playtests is the next task: `tasks/2026-10-04-round1-results.md`.
 
 ## Goal
 Find out by playing, cheaply and with one variable per test, whether
@@ -80,8 +82,9 @@ its own. The pass and fail criteria are written before coding (design,
 - [x] Rules pure and headless (boundary tests like `tests/game-boundary.test.ts`).
 - [x] Tests green, typecheck clean, `npm run build` builds every page.
 - [x] Private previews published.
-- [ ] Lukas told, in plain words, what to try, and given the pass/fail
-      questions to ask testers (design, "Round 1").
+- [x] Lukas told, in plain words, what to try, and given the pass/fail
+      questions to ask testers (design, "Round 1"): in chat, and on the
+      test sheet below.
 - [x] **The test sheet** (private artifact, 2026-10-04):
       https://claude.ai/artifact/CuULHBA3XAWhQgrmi9Wf2M. It links the three
       games, says how to run a session, and records each tester: the

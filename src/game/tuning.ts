@@ -117,7 +117,7 @@ export const MEDAL_GOLD_EUR = 250e6;
 export const MEDAL_GOLD_EARNED_SHARE = 0.9;
 
 /**
- * Round 1's tuned comparison mode (`play.html?tuned=1`, tasks/2026-10-04-fun-core-toy.md
+ * Round 1's tuned comparison mode (`play.html?tuned=1`, tasks/done/2026-10-04-fun-core-toy.md
  * part c): income multiplied, and three stub offers on fixed dates. [tuning]
  */
 export const TUNED_INCOME_FACTOR = 3;

@@ -1,5 +1,5 @@
 /**
- * Round 1's tuned comparison mode (`play.html?tuned=1`, tasks/2026-10-04-fun-core-toy.md
+ * Round 1's tuned comparison mode (`play.html?tuned=1`, tasks/done/2026-10-04-fun-core-toy.md
  * part c): slice 1 with income ×3 and three stub offers. A normal game must be
  * untouched by it.
  */

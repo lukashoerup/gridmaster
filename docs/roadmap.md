@@ -61,10 +61,12 @@ proven on one zone before Europe is built.
   shaped the fun core: own power plants on a map of hungry grid hubs; longer
   plans; history as surprises; a 3–4 hour campaign in chapters
   (`docs/design/fun-core.md` v2). Next: round 1, four cheap tests with pass
-  and fail criteria (approved: D20, `tasks/2026-10-04-fun-core-toy.md`).
-  Built so far: toy 1, "Hubs" (`toy.html`), toy 2, "The board"
-  (`board.html`), and slice 1 tuned (`play.html?tuned=1`), each published
-  as a private preview. Then rebuild
+  and fail criteria (approved: D20, `tasks/done/2026-10-04-fun-core-toy.md`).
+  All four are built: toy 1, "Hubs" (`toy.html`), toy 2, "The board"
+  (`board.html`), slice 1 tuned (`play.html?tuned=1`) and the one-screen
+  still, each published as a private preview, with a test sheet that scores
+  the testers. Now: Lukas and 3–4 testers play, and the results are read
+  (`tasks/2026-10-04-round1-results.md`). Then rebuild
   the prototype on whichever core passes. Slice 2 and later wait.
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels

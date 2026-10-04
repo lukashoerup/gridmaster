@@ -134,7 +134,8 @@ The review adds two, and both fit "longer plans":
 
 ## Round 1: test before rebuilding
 Round 1 has one variable per test; it is the review's §2, reshaped by
-D19. Task: `tasks/2026-10-04-fun-core-toy.md`.
+D19. Built in `tasks/done/2026-10-04-fun-core-toy.md`; the results are read
+in `tasks/2026-10-04-round1-results.md`.
 
 | Test | What it answers | Cost |
 |---|---|---|

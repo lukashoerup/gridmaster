@@ -94,7 +94,7 @@ export interface Notice {
 
 export type CardKind = 'welcome' | 'event' | 'annual' | 'cash' | 'restructured' | 'gameover' | 'end' | 'offer';
 
-/** The three stub offers of round 1's tuned comparison mode (tasks/2026-10-04-fun-core-toy.md part c). */
+/** The three stub offers of round 1's tuned comparison mode (tasks/done/2026-10-04-fun-core-toy.md part c). */
 export type OfferId = 'landowner' | 'refinance' | 'firesale';
 
 /**

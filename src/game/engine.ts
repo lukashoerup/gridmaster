@@ -1043,7 +1043,7 @@ export function nowLabel(state: GameState): string {
 }
 
 // ---------------------------------------------------------------------------
-// Round 1's tuned comparison mode (tasks/2026-10-04-fun-core-toy.md part c)
+// Round 1's tuned comparison mode (tasks/done/2026-10-04-fun-core-toy.md part c)
 
 const OFFER_TEXT: Readonly<Record<OfferId, { readonly title: string; readonly body: readonly string[] }>> = {
   landowner: {

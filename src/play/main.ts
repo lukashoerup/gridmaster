@@ -39,7 +39,7 @@ import { clearSave, readSave, tunedMode, writeSave } from './storage';
 import './style.css';
 
 const inputs = loadPlaceholderInputs();
-/** Round 1's comparison mode (tasks/2026-10-04-fun-core-toy.md part c): `play.html?tuned=1`. */
+/** Round 1's comparison mode (tasks/done/2026-10-04-fun-core-toy.md part c): `play.html?tuned=1`. */
 const TUNED = tunedMode();
 const HOURS_PER_SECOND = 8760 / SECONDS_PER_YEAR_AT_X1;
 const HOUSEHOLD_MWH = 4;

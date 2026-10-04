@@ -10,7 +10,7 @@ makes in chat are added here in the same session, with his words quoted.
 > "Go"
 
 This answers Q9. Round 1 of `docs/design/fun-core.md` v2 is built in a
-fresh session from `tasks/2026-10-04-fun-core-toy.md`: toy 1 "Hubs"
+fresh session from `tasks/2026-10-04-fun-core-toy.md` (now in `tasks/done/`): toy 1 "Hubs"
 first, then toy 2 "The board", the tuned slice 1 and the one-screen still.
 Its pass and fail criteria are fixed before coding (design, "Round 1").
 
