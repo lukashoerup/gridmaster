@@ -4,7 +4,9 @@
 direction, technology, platforms and first-release scope decided (D6–D9 in
 `docs/decisions.md`). The Phase 2 prototype is already designed and approved
 (`docs/design/one-zone-prototype.md`, D10–D12). Next up: the Phase 1 task.
-Open: Q5 (network access), needed for real data and the verification pass.
+Open: Q5 (network access), needed for real data and the verification pass;
+Q6 (which proposals from the 2026-10-04 fun and progression review go into
+the prototype), needed before the Phase 2 build.
 
 ## The principle: find the fun before adding content
 Lukas's constraint (decision D5) is a realistic scope with no compromise on
@@ -44,7 +46,8 @@ proven on one zone before Europe is built.
   and a first wind turbine under fixed tariffs, the hourly market from 1999,
   your own building lowering your price, answers in east-west panels,
   batteries and contracts. Loans, speed controls, "why did my price drop?".
-  Design: `docs/design/one-zone-prototype.md`.
+  Design: `docs/design/one-zone-prototype.md`; the reward changes proposed in
+  `docs/reviews/2026-10-04-fun-and-progression.md` wait on Q6.
 - **Gate:** Lukas and 3–5 friends play for about an hour. Does
   cannibalisation read as a puzzle rather than a punishment, and do they want
   to keep going? Pass criteria are in the design's playtest plan. Iterate

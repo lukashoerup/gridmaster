@@ -53,6 +53,7 @@ taste (here: anything players will see or feel) — or when the plan changes.
 | `docs/decisions.md` | Decision log, and the open questions waiting for Lukas. |
 | `docs/licences.md` | Source and licence of everything third-party or AI-generated. |
 | `docs/research/` | 2026-10-04 research: market, competitors, audience, design, data, tech. |
+| `docs/reviews/` | Reviews of the plan. Their proposals are not decisions until `docs/decisions.md` says so. |
 | `tasks/` | One file per unit of work; moved to `tasks/done/` when finished. |
 
 ## Document routing (read ONLY when needed)
@@ -61,7 +62,7 @@ its raw notes are in `docs/research/research_notes/Renewable energy tycoon game 
 
 | Working on... | Read first |
 |---|---|
-| Mechanics, progression, balance | `docs/vision.md`, `docs/design/`, then the report's design sections |
+| Mechanics, progression, balance | `docs/vision.md`, `docs/design/`, `docs/reviews/`, then the report's design sections |
 | Simulation: weather, demand, prices | notes → `data_and_modelling.md` |
 | Eras, tech tree, historical events | notes → `history_and_tech_timeline.md` |
 | Engine, architecture, Steam release | notes → `build_approach_and_steam.md` |

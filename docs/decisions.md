@@ -121,6 +121,21 @@ access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
 
+### Q6 — Which fun-review proposals go into the prototype (taste; before the Phase 2 build)
+Lukas asked on 2026-10-04 whether the plan will be fun and rewarding enough.
+The review (`docs/reviews/2026-10-04-fun-and-progression.md`) finds the
+decision space strong and the reward side thin. Unlocks come by date, goals
+come only at the end, the middle is thin, five of the nine scripted events
+are setbacks, and the opposition has no face. It proposes P1–P10 for the
+prototype and L1–L4 for later. Every proposal except P10 (playtest measures,
+builder-level) changes what players see or feel, so each waits for Lukas.
+**Recommended:** P1 ("called it" reveals), P3 (offer deck), P7 (celebrations
+and footprint counters), P9 (restructuring instead of game over) and P10 now;
+P2 (company tiers), P4 (a named rival; changes design §10) and P6 (earlier
+warning, an electric boiler) if he likes them; P5 and P8 after the first
+playtest. Needed before the Phase 2 build starts. Phase 1 does not depend
+on it.
+
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are
 listed in `docs/roadmap.md`.
