@@ -45,6 +45,7 @@ taste (here: anything players will see or feel) — or when the plan changes.
 | `docs/original-brief.md` | Lukas's founding description, verbatim. Never edited. |
 | `docs/vision.md` | What the game is and is not: pillars, loops, eras. Approved (D6); pillar changes need Lukas. |
 | `docs/roadmap.md` | Phases, the gate that ends each one, the current phase. |
+| `docs/design/` | Designs a builder implements from: `one-zone-prototype.md` (Phase 2). |
 | `docs/decisions.md` | Decision log, and the open questions waiting for Lukas. |
 | `docs/licences.md` | Source and licence of everything third-party or AI-generated. |
 | `docs/research/` | 2026-10-04 research: market, competitors, audience, design, data, tech. |
@@ -56,7 +57,7 @@ its raw notes are in `docs/research/research_notes/Renewable energy tycoon game 
 
 | Working on... | Read first |
 |---|---|
-| Mechanics, progression, balance | `docs/vision.md`, then the report's design sections |
+| Mechanics, progression, balance | `docs/vision.md`, `docs/design/`, then the report's design sections |
 | Simulation: weather, demand, prices | notes → `data_and_modelling.md` |
 | Eras, tech tree, historical events | notes → `history_and_tech_timeline.md` |
 | Engine, architecture, Steam release | notes → `build_approach_and_steam.md` |

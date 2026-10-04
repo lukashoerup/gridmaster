@@ -19,7 +19,12 @@ judgement: do the prices behave like the real ones?
 ## Acceptance criteria
 - [ ] Simulation core with no UI dependencies; seeded and deterministic (same
       seed and inputs → identical output, asserted by a test)
-- [ ] Zones: Denmark, Germany, Norway (one zone is fine), Spain; years 1995–2025
+- [ ] Zones: Western Denmark (DK1 — not DK2), Germany, Norway (one zone is
+      fine), Spain; years 1995–2025. DK1 needs most care: the one-zone
+      prototype (`docs/design/one-zone-prototype.md` §4.1) runs on it, with
+      the toy's DE and NO prices as its neighbours across two links
+      (historical capacities), its historical thermal fleet and others'
+      wind and solar build-out, and regulated mode until 30 June 1999
 - [ ] Weather: zone-level hourly wind and solar capacity factors built from
       real weather years (ERA5 or the Copernicus PECD — see the data notes),
       a different weather year drawn per game year from the seed

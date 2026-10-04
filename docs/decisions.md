@@ -6,8 +6,27 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
-D6–D9 were answered in chat on 2026-10-04, right after Lukas read the
-research summary; each was the recommended option, chosen as offered.
+D6–D12 were answered in chat on 2026-10-04: D6–D9 after the research
+summary, D10–D12 after the prototype design. Each time Lukas chose the
+recommended option as offered.
+
+### D12 — Fossil plants: never built; late-game conversion only (Lukas, 2026-10-04)
+Chose: "Convert, never build". The player never builds fossil plants; they
+are the backdrop that sets prices. Late in the game the player may buy
+retiring fossil plants for their grid connections and convert them (storage,
+power-to-X). Applies to the full game; the prototype has no fossil ownership.
+
+### D11 — The opening: panels on the barn, wind first (Lukas, 2026-10-04)
+Chose: "Panels on the barn, wind first". The game starts with a few solar
+panels already on the barn, earning a small trickle; the first big purchase
+is a wind turbine. Historically honest (1990s Danish solar barely paid, wind
+did) while keeping the brief's "start with a few solar panels".
+
+### D10 — The prototype is set in Western Denmark (DK1), 1995–2025 (Lukas, 2026-10-04)
+Chose: "Western Denmark". Reasons in `docs/design/one-zone-prototype.md` §1:
+the player's own building visibly moves prices, the zone has the whole
+history, and Energinet's CC BY data can calibrate it. Germany remains the
+strongest candidate for the vertical slice.
 
 ### D9 — First-release scope as proposed (Lukas, 2026-10-04)
 Chose: "Yes, that size". The table in `docs/roadmap.md` ("First-release
