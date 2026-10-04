@@ -208,7 +208,7 @@ app.append(
   ]),
   el('footer', {}, [
     el('p', {
-      text: 'Phase 1 market toy. Each year in the first four charts is simulated on its own from standard starting levels; the two long-run charts replay 1995–2025 in sequence. Prices are day-ahead style hourly prices in €/MWh. Nothing here is real data yet.',
+      text: 'Phase 1 market toy. The two long-run charts replay 1995–2025 in sequence for the chosen seed, so reservoirs and storage carry over from year to year. The chosen year starts from the long run’s levels on 1 January of that year, so its numbers match the long-run charts (until the long run gets there, it is marked provisional). Prices are day-ahead style hourly prices in €/MWh. Nothing here is real data yet.',
     }),
   ]),
 );
@@ -235,6 +235,8 @@ let seriesRequestId = 0;
 let cannibalRequestId = 0;
 let currentYear: ZoneYearPayload | null = null;
 let seriesYears: Map<number, Readonly<Record<string, ZoneStats>>> = new Map();
+let seriesSeed = -1;
+let upgradeRequested = false;
 let cannibalPoints: readonly CannibalPoint[] = [];
 let pending = 0;
 
@@ -251,21 +253,33 @@ function requestYear(): void {
   yearRequestId = nextId++;
   busy(1);
   setStatus(`Simulating ${state.zone} ${state.year}…`);
-  client.send({ kind: 'year', id: yearRequestId, seed: state.seed, zone: state.zone, year: state.year, extraSolarGw: state.extraGw });
+  client.send({ kind: 'year', gen: yearRequestId, seed: state.seed, zone: state.zone, year: state.year, extraSolarGw: state.extraGw });
 }
 
+/** The long run is the baseline of a seed (no slider solar), so only a new seed restarts it. */
 function requestSeries(): void {
   seriesRequestId = nextId++;
   seriesYears = new Map();
+  seriesSeed = state.seed;
   busy(1);
-  client.send({ kind: 'series', id: seriesRequestId, seed: state.seed, zone: state.zone, extraSolarGw: state.extraGw });
+  client.send({ kind: 'series', gen: seriesRequestId, seed: state.seed });
 }
 
 function requestCannibal(): void {
   cannibalRequestId = nextId++;
   cannibalPoints = [];
   busy(1);
-  client.send({ kind: 'cannibal', id: cannibalRequestId, seed: state.seed, zone: state.zone, year: state.year, maxGw: MAX_GW[state.zone] ?? 100 });
+  client.send({ kind: 'cannibal', gen: cannibalRequestId, seed: state.seed, zone: state.zone, year: state.year, maxGw: MAX_GW[state.zone] ?? 100 });
+}
+
+/** Once the long run has reached the shown year, redo a provisional (fresh-start) year view from its state. */
+function upgradeProvisional(): void {
+  if (currentYear === null || currentYear.start !== 'fresh' || upgradeRequested) return;
+  if (currentYear.seed !== seriesSeed || !seriesYears.has(currentYear.year - 1)) return;
+  if (currentYear.zone !== state.zone || currentYear.year !== state.year || currentYear.seed !== state.seed) return;
+  upgradeRequested = true;
+  requestYear();
+  requestCannibal();
 }
 
 function currentCannibalPoint(): CannibalPoint | null {
@@ -312,7 +326,16 @@ function renderYear(): void {
         .join('; ')}.`,
     );
   }
-  summary.replaceChildren(...parts.map((t) => el('p', { text: t })));
+  const nodes = parts.map((t) => el('p', { text: t }));
+  if (p.start === 'fresh') {
+    nodes.unshift(
+      el('p', {
+        class: 'provisional',
+        text: `Provisional: ${p.year} started from standard levels (reservoirs at their usual fill, storage empty). It updates by itself once the long run below has reached ${p.year}, so the numbers match those charts.`,
+      }),
+    );
+  }
+  summary.replaceChildren(...nodes);
   solarLabel.textContent = `${fmt(state.extraGw, 1)} GW`;
 }
 
@@ -326,26 +349,28 @@ function renderSeries(): void {
 client.onMessage((r) => {
   switch (r.kind) {
     case 'year':
-      if (r.id !== yearRequestId) return;
+      if (r.gen !== yearRequestId) return;
       busy(-1);
       currentYear = r.payload;
+      upgradeRequested = false;
       renderYear();
       setStatus(`Simulated ${state.zone} ${state.year} in ${r.ms.toFixed(0)} ms${seriesYears.size < LAST_YEAR - FIRST_YEAR + 1 ? `; long-run charts: ${seriesYears.size} of ${LAST_YEAR - FIRST_YEAR + 1} years` : ''}.`);
       break;
     case 'seriesYear':
-      if (r.id !== seriesRequestId) return;
+      if (r.gen !== seriesRequestId) return;
       seriesYears.set(r.year, r.stats);
       if (r.year % 3 === 0 || r.year === LAST_YEAR) renderSeries();
+      upgradeProvisional();
       if (pending > 0) setStatus(`Long-run charts: ${seriesYears.size} of ${LAST_YEAR - FIRST_YEAR + 1} years simulated…`);
       break;
     case 'seriesDone':
-      if (r.id !== seriesRequestId) return;
+      if (r.gen !== seriesRequestId) return;
       busy(-1);
       renderSeries();
       setStatus(`All ${LAST_YEAR - FIRST_YEAR + 1} years simulated in ${(r.ms / 1000).toFixed(1)} s.`);
       break;
     case 'cannibal':
-      if (r.id !== cannibalRequestId) return;
+      if (r.gen !== cannibalRequestId) return;
       busy(-1);
       cannibalPoints = r.points;
       charts.cannibal.setOption(cannibalOption(cannibalPoints, state.extraGw, currentCannibalPoint()), true);
@@ -381,7 +406,7 @@ zoneSelect.addEventListener('change', () => {
   }
   writeHash(state);
   requestYear();
-  requestSeries();
+  renderSeries();
   requestCannibal();
 });
 
@@ -430,9 +455,6 @@ solarInput.addEventListener('input', () => {
   scheduleYear();
 });
 
-solarInput.addEventListener('change', () => {
-  requestSeries();
-});
 
 // ---------------------------------------------------------------------------
 // Go

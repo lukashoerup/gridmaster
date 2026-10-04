@@ -38,7 +38,9 @@ export { zoneStats, priceDuration, meanByHourOfDay, type ZoneStats, type TechSta
 export { Hasher } from './hash';
 export {
   World,
+  MAX_SEED,
   hashYearResult,
+  type WorldState,
   type YearResult,
   type ZoneYear,
   type LinkYear,

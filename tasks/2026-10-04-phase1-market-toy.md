@@ -95,10 +95,18 @@ tests; (b) real-data pipeline; (c) calibration report; (d) explorer page.
 Commit after each.
 
 ## Working notes (agent fills in)
-- D14 requirement (merged from main): hourly zone prices are recomputable
-  deterministically from inputs, seed and year (`tests/world.test.ts`
-  determinism and golden hash), and a technology's capture price is computed
-  only from its output and those prices (`src/sim/stats.ts`). Per-asset
+- D14 requirement (merged from main; contract corrected 2026-10-04 after
+  testing, finding F3): a year's hourly zone prices are a pure function of
+  the inputs (including capacity added with `addCapacity`), the seed, the
+  year **and the starting state** — reservoir levels, storage charge and the
+  recent-price windows of storage and the water value. The state is
+  explicit: `World.snapshot()` returns it as plain JSON-safe data and
+  `World.restore(state)` loads it, so a save keeps the state of 1 January;
+  replaying from 1995 on a fresh world reproduces the long run exactly
+  (`tests/world.test.ts`: snapshot → JSON → restore → identical hashes, and
+  the golden hash). Simulating the same year twice on one world starts from
+  different states, by design. A technology's capture price is computed only
+  from its output and those prices (`src/sim/stats.ts`). Per-asset
   re-pricing for Phase 2's reveals and trading desk builds on that.
 
 ### 2026-10-04 — parts (a) and (d) on placeholder inputs
@@ -204,9 +212,9 @@ surpluses overstated. No forced outages. The splitting heuristic with its
 wrong-way repair is not a full LP: with different price floors in one group
 it can still show a link flowing from the dearer zone (none in the placeholder
 world). Must-run CHP has no heat storage or bypass.
-Hydro has one reservoir per zone. The explorer simulates the selected year on
-its own from standard starting levels (reservoir 62 %, storage half full)
-while the long-run charts replay 1995–2025 in sequence; the page says so.
+Hydro has one reservoir per zone. The explorer's selected year starts from
+the long run's state of 1 January (provisional, from standard levels, until
+the long run gets there), so it matches the long-run charts.
 The page was not viewed in a browser in this environment (none available);
 its protocol and chart builders are tested headless. `npm install` needs
 `legacy-peer-deps` (in `.npmrc`) because npm 10 crashes resolving vitest
@@ -272,4 +280,30 @@ from the report's reproduction where there was one.
   negative hours unchanged (19 and 34 for seeds 42/7).
 - Golden hash (seed 42, 2019): `18e65696d6daa883` → `f760731eca2d0449`, from
   F1 alone (scarcity never binds in that year).
+
+**World state and determinism (`src/sim/world.ts`, `src/explorer/protocol.ts`).**
+- F3 / analyst B6 / QA M3: the carried state is explicit (`WorldState`,
+  `snapshot()`, `restore()`; validated on restore) and the contract is in the
+  `world.ts` header and the D14 note above. The water value's anchor is now
+  summed afresh from its window, so a restored window gives a bit-identical
+  mean.
+- Explorer: the long run is the baseline of a seed (no slider solar), cached
+  per seed in the worker, and records the state at each 1 January. A
+  single-year view and the solar curve start from that state once it
+  exists, so the summary equals the long-run charts for the same zone, year
+  and seed (test: year view stats = long-run stats). Before that, the year
+  is computed from the fresh state, marked provisional on the page, and
+  recomputed automatically when the long run reaches it. Zone and year
+  changes no longer restart the long run; a superseded long run stops
+  between years and resumes from its cache.
+- F15: new storage starts empty; when its energy capacity shrinks the energy
+  above it is dropped at 1 January, and storage that disappears loses its
+  charge (documented in the `world.ts` header).
+- F12: `simulateYear` rejects non-integer years and years outside the
+  inputs' range, which is now explicit in the data (`zones.json`
+  `years: [1995, 2025]` → `WorldInputs.firstYear/lastYear`). Seeds must be
+  integers in 0…4294967295 (unsigned 32-bit); others are rejected instead of
+  wrapped. The explorer only offers that range (see the explorer fixes).
+- Golden hash: `f760731eca2d0449` → `8ff7768adee91c59` (storage starts
+  empty; anchor mean summed afresh). Speed: median 447 ms per year (was 411).
 

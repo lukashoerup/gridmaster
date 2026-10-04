@@ -140,6 +140,9 @@ export interface WeatherParams {
 
 export interface WorldInputs {
   readonly status: string;
+  /** First and last year the inputs cover; the simulation refuses years outside them. */
+  readonly firstYear: number;
+  readonly lastYear: number;
   readonly zones: readonly ZoneInput[];
   readonly technologies: ReadonlyMap<TechId, TechInput>;
   readonly fuels: ReadonlyMap<FuelId, Keyframes>;
@@ -350,6 +353,11 @@ function parseTech(x: unknown, path: string): TechInput {
 export function validateInputs(raw: RawDataFiles): WorldInputs {
   const zonesFile = obj(raw.zones, 'zones');
   const status = requireStatus(zonesFile, 'zones');
+  const years = numbers(zonesFile['years'], 'zones.years', 2);
+  const [firstYear = NaN, lastYear = NaN] = years;
+  if (!Number.isInteger(firstYear) || !Number.isInteger(lastYear) || firstYear > lastYear) {
+    fail('zones.years', 'expected [first, last] as integers with first ≤ last');
+  }
   const zones = arr(zonesFile['zones'], 'zones.zones').map((z, i) => parseZone(z, `zones.zones[${i}]`));
   if (zones.length === 0) fail('zones.zones', 'no zones');
   const zoneIds = new Set(zones.map((z) => z.id));
@@ -462,5 +470,5 @@ export function validateInputs(raw: RawDataFiles): WorldInputs {
     inflowDailySigma: num(wf['inflowDailySigma'], 'weather.inflowDailySigma'),
   };
 
-  return { status, zones, technologies, fuels, co2, capacity, mustRunOverrides, links, support, weather };
+  return { status, firstYear, lastYear, zones, technologies, fuels, co2, capacity, mustRunOverrides, links, support, weather };
 }

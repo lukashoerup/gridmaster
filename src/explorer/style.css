@@ -124,6 +124,14 @@ body.busy #status::after {
   margin: 2px 0;
 }
 
+.summary .provisional {
+  color: var(--warn-ink);
+  background: var(--warn-bg);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr;

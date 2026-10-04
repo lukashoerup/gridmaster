@@ -20,4 +20,6 @@ calibrates against Energinet's open price statistics.
 
 Year-dependent values are keyframes `[[year, value], …]`, interpolated
 linearly between the years given and held constant outside them; the
-simulation reads the value for the integer year.
+simulation reads the value for the integer year. `zones.json` also sets
+`years: [first, last]`, the years the inputs cover; the simulation refuses
+any other year.

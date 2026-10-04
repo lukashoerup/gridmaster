@@ -246,9 +246,10 @@ describe('determinism', () => {
 
 /**
  * Golden hash of seed 42, year 2019, fresh world. Recompute after any intended change to the model or the placeholder data.
- * History: 18e65696d6daa883 (first build); f760731eca2d0449 (2026-10-04, F1: fixed links no longer throttled to the importer's demand).
+ * History: 18e65696d6daa883 (first build); f760731eca2d0449 (2026-10-04, F1: fixed links no longer throttled to the importer's demand);
+ * 8ff7768adee91c59 (2026-10-04, F15: storage starts empty; the water value's anchor is summed afresh from its window).
  */
-const GOLDEN_HASH_2019_SEED_42 = 'f760731eca2d0449';
+const GOLDEN_HASH_2019_SEED_42 = '8ff7768adee91c59';
 
 describe('capacity additions', () => {
   it('adds capacity from a given year and affects the result', () => {
@@ -345,6 +346,116 @@ describe('stress-test findings in the placeholder world', () => {
       }, seed);
       const r = w.simulateYear(2024);
       expect(r.wrongWayLinkHours, `seed ${seed} (was ${before})`).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('world state: snapshot and restore (stress F3, F12, F15)', () => {
+  it('F3: a year is a pure function of inputs, seed, year and starting state', () => {
+    const w = world(42);
+    const fresh = w.snapshot();
+    const first = hashYearResult(w.simulateYear(2019));
+    expect(first).toBe(GOLDEN_HASH_2019_SEED_42);
+    // Simulating again on the same world starts from the end of 2019: a different start, a different result…
+    const second = hashYearResult(w.simulateYear(2019));
+    expect(second).not.toBe(first);
+    // …and restoring the starting state reproduces the first run exactly.
+    w.restore(fresh);
+    expect(hashYearResult(w.simulateYear(2019))).toBe(first);
+    w.reset();
+    expect(hashYearResult(w.simulateYear(2019))).toBe(first);
+  });
+
+  it('snapshot → JSON → restore → simulate gives identical hashes, and replaying from 1995 reproduces the long run', () => {
+    const long = world(5);
+    for (let y = 1995; y <= 1998; y++) long.simulateYear(y);
+    const jan1999 = long.snapshot();
+    const json = JSON.stringify(jan1999);
+    const expected = [1999, 2000].map((y) => hashYearResult(long.simulateYear(y)));
+
+    const restored = world(5);
+    restored.restore(JSON.parse(json));
+    expect(restored.snapshot()).toEqual(jan1999);
+    expect([1999, 2000].map((y) => hashYearResult(restored.simulateYear(y)))).toEqual(expected);
+
+    const replay = world(5);
+    for (let y = 1995; y <= 1998; y++) replay.simulateYear(y);
+    expect(JSON.stringify(replay.snapshot())).toBe(json);
+  });
+
+  it('covers reservoirs, storage charge and both price windows', () => {
+    const w = world(3);
+    w.simulateYear(2015);
+    const s = w.snapshot();
+    expect(s.version).toBe(1);
+    expect(Object.keys(s.reservoirMwh).sort()).toEqual(['ES', 'NO']);
+    expect(Object.keys(s.storageMwh)).toContain('DE/pumped');
+    expect(Object.keys(s.storageMwh)).toContain('ES/pumped');
+    for (const k of Object.keys(s.storageMwh)) expect(k).toMatch(/^(DK1|DE|NO|ES)\/(pumped|battery)$/);
+    expect(s.storageMwh['DE/pumped']).toBeGreaterThan(0);
+    expect(s.storagePrices['DE']?.length).toBe(168);
+    expect(s.neighbourPrices['NO']?.length).toBe(720);
+    expect(s.neighbourPrices['ES']?.length ?? 0).toBe(0); // Spain has no link to anchor its water value to
+  });
+
+  it('rejects malformed states with a clear error and leaves the world unchanged', () => {
+    const w = world(3);
+    const good = w.snapshot();
+    const bad: [string, unknown][] = [
+      ['unknown state version', { ...good, version: 2 }],
+      ['unknown zone', { ...good, reservoirMwh: { FR: 1 } }],
+      ['has no reservoir', { ...good, reservoirMwh: { DK1: 1 } }],
+      ['outside the reservoir', { ...good, reservoirMwh: { NO: -1 } }],
+      ['bad key', { ...good, storageMwh: { 'DE/coal': 1 } }],
+      ['negative', { ...good, storageMwh: { 'DE/pumped': -1 } }],
+      ['finite number', { ...good, storagePrices: { DE: [1, NaN] } }],
+      ['finite number', { ...good, neighbourPrices: { NO: [Infinity] } }],
+    ];
+    for (const [msg, state] of bad) expect(() => w.restore(state as never), msg).toThrow(msg);
+    expect(w.snapshot()).toEqual(good);
+  });
+
+  it('F15: new storage starts empty instead of half full', () => {
+    const w = world(9);
+    w.addCapacity('DE', 'battery', 100_000, 2024);
+    const r = w.simulateYear(2024);
+    const de = r.byZone['DE'];
+    const soc = de?.stateOfCharge['battery'];
+    const charge = de?.charging['battery'];
+    const discharge = de?.generation['battery'];
+    if (soc === undefined || charge === undefined || discharge === undefined) throw new Error('no battery');
+    const eta = Math.sqrt(inputs.technologies.get('battery')?.roundTripEfficiency ?? 1);
+    expect(discharge[0]).toBe(0); // nothing to sell in the first hour
+    expect(soc[0]).toBeCloseTo((charge[0] ?? 0) * eta, 9);
+  });
+
+  it('F15: stored energy above a shrunken capacity is dropped on 1 January; vanished storage loses its charge', () => {
+    const w = world(9);
+    const s = w.snapshot();
+    w.restore({ ...s, storageMwh: { 'DE/pumped': 1e9, 'DK1/pumped': 500 } });
+    const r = w.simulateYear(2019);
+    const de = r.byZone['DE'];
+    const energy = (de?.capacityMw['pumped'] ?? 0) * (inputs.technologies.get('pumped')?.storageHours ?? 0);
+    const soc = de?.stateOfCharge['pumped'];
+    if (soc === undefined) throw new Error('no pumped storage');
+    for (let h = 0; h < r.hours; h++) expect(soc[h] ?? Infinity).toBeLessThanOrEqual(energy + 1e-6);
+    expect(w.snapshot().storageMwh['DK1/pumped']).toBeUndefined();
+  });
+
+  it('F12: rejects years that are not integers within the inputs’ range', () => {
+    const w = world(1);
+    expect(inputs.firstYear).toBe(1995);
+    expect(inputs.lastYear).toBe(2025);
+    for (const year of [NaN, Infinity, 2019.5, 1900, 1994, 2026, 0, -4, '2019' as unknown as number]) {
+      expect(() => w.simulateYear(year), String(year)).toThrow(/year must be an integer in 1995…2025/);
+    }
+  });
+
+  it('F12: seeds are unsigned 32-bit integers; anything else is rejected, not wrapped', () => {
+    expect(world(0).seed).toBe(0);
+    expect(world(4294967295).seed).toBe(4294967295);
+    for (const seed of [-1, 4294967296, 2 ** 53, 1.9, NaN, Infinity, -Infinity]) {
+      expect(() => world(seed), String(seed)).toThrow(/seed must be an integer in 0…4294967295/);
     }
   });
 });

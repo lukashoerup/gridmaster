@@ -1,8 +1,28 @@
 /**
  * The world: inputs + weather source + seed, simulated one year at a time on
- * a fixed timestep of one hour. State that carries across years (reservoir
- * levels, storage state of charge, the rolling price windows storage uses)
- * lives here; `reset()` returns it to the starting point.
+ * a fixed timestep of one hour.
+ *
+ * **Contract.** A year's result is a pure function of four things: the
+ * inputs (including capacity added with `addCapacity`), the seed, the year
+ * and the starting state. The starting state is everything that carries
+ * across years: reservoir levels, the storage state of charge, and the
+ * recent-price windows that storage and the water value look back on. It is
+ * explicit and serialisable: `snapshot()` returns it as plain JSON-safe data
+ * and `restore(state)` loads it, so a game save stores the state of
+ * 1 January (or a replay starts from 1995: a fresh world simulating
+ * 1995, 1996, … in order reproduces the long run exactly). Calling
+ * `simulateYear` advances the state to the end of that year; simulating the
+ * same year twice on one world therefore starts from different states.
+ * `reset()` returns to the fresh starting state.
+ *
+ * **Seeds** are unsigned 32-bit integers (0…4294967295); anything else is
+ * rejected rather than silently wrapped. **Years** must be integers within
+ * the range the inputs cover (`WorldInputs.firstYear`…`lastYear`).
+ *
+ * **Storage** starts empty when it first appears (no free charge). Its
+ * energy capacity is set per year; if it shrinks, the stored energy above
+ * the new capacity is dropped at 1 January, and storage that disappears
+ * takes its charge with it.
  */
 import { hourFromDate, hoursInYear, monthOfDay } from './calendar';
 import { demandSeries } from './demand';
@@ -98,6 +118,24 @@ export interface YearResult {
   readonly wrongWayLinkHours: number;
 }
 
+/**
+ * Everything that carries from one year into the next, as plain JSON-safe
+ * data. Windows list their values oldest first. A zone missing from
+ * `reservoirMwh` starts at its reservoir's initial fill; storage missing
+ * from `storageMwh` starts empty.
+ */
+export interface WorldState {
+  readonly version: 1;
+  /** Reservoir content in MWh, per zone with a reservoir. */
+  readonly reservoirMwh: Readonly<Record<ZoneId, number>>;
+  /** Stored energy in MWh per storage plant, keyed `zone/tech` (e.g. `DE/pumped`). */
+  readonly storageMwh: Readonly<Record<string, number>>;
+  /** The last week of hourly prices per zone that storage sets its thresholds from. */
+  readonly storagePrices: Readonly<Record<ZoneId, readonly number[]>>;
+  /** The last month of linked zones' hourly prices per reservoir zone, the water value's anchor. */
+  readonly neighbourPrices: Readonly<Record<ZoneId, readonly number[]>>;
+}
+
 /** Rolling window of recent prices with cheap percentile lookup. */
 class PriceWindow {
   private readonly ring: Float64Array;
@@ -113,7 +151,8 @@ class PriceWindow {
     return this.count;
   }
 
-  push(p: number): void {
+  push(price: number): void {
+    const p = price + 0; // −0 → 0, so saved and live windows match bit for bit
     if (this.count === this.size) {
       const old = this.ring[this.head] ?? 0;
       const idx = this.indexOf(old);
@@ -151,6 +190,19 @@ class PriceWindow {
     return this.sorted[idx] ?? 0;
   }
 
+  /** The window's values, oldest first. */
+  values(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < this.count; i++) out.push(this.ring[(this.head + i) % this.size] ?? 0);
+    return out;
+  }
+
+  /** Replace the contents with `values` (oldest first; only the newest `size` are kept). */
+  load(values: readonly number[]): void {
+    this.reset();
+    for (const v of values.slice(Math.max(0, values.length - this.size))) this.push(v);
+  }
+
   reset(): void {
     this.sorted.length = 0;
     this.head = 0;
@@ -158,12 +210,15 @@ class PriceWindow {
   }
 }
 
-/** Running mean over a fixed window of hours. */
+/**
+ * Mean over a fixed window of hours. The mean is summed afresh from the
+ * window's values, oldest first, so it depends only on what the window holds,
+ * not on how it got there (a restored window gives the identical mean).
+ */
 class RollingMean {
   private readonly ring: Float64Array;
   private head = 0;
   private count = 0;
-  private sum = 0;
 
   constructor(private readonly size: number) {
     this.ring = new Float64Array(size);
@@ -173,26 +228,40 @@ class RollingMean {
     return this.count;
   }
 
-  push(v: number): void {
+  push(value: number): void {
+    const v = value + 0; // −0 → 0
     if (this.count === this.size) {
-      this.sum -= this.ring[this.head] ?? 0;
       this.ring[this.head] = v;
       this.head = (this.head + 1) % this.size;
     } else {
       this.ring[(this.head + this.count) % this.size] = v;
       this.count++;
     }
-    this.sum += v;
   }
 
   mean(): number {
-    return this.count > 0 ? this.sum / this.count : 0;
+    if (this.count === 0) return 0;
+    let sum = 0;
+    for (let i = 0; i < this.count; i++) sum += this.ring[(this.head + i) % this.size] ?? 0;
+    return sum / this.count;
+  }
+
+  /** The window's values, oldest first. */
+  values(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < this.count; i++) out.push(this.ring[(this.head + i) % this.size] ?? 0);
+    return out;
+  }
+
+  /** Replace the contents with `values` (oldest first; only the newest `size` are kept). */
+  load(values: readonly number[]): void {
+    this.reset();
+    for (const v of values.slice(Math.max(0, values.length - this.size))) this.push(v);
   }
 
   reset(): void {
     this.head = 0;
     this.count = 0;
-    this.sum = 0;
   }
 }
 
@@ -209,6 +278,10 @@ const STORAGE_WARMUP_HOURS = 24;
 const STORAGE_MIN_SPREAD = 2;
 
 const TECH_INDEX = new Map<TechId, number>(TECHS.map((t, i) => [t, i]));
+const STORAGE_TECHS = ['pumped', 'battery'] as const;
+
+/** Largest seed: seeds are unsigned 32-bit integers. */
+export const MAX_SEED = 4294967295;
 
 /**
  * An annual value for a month of the year: the year's value, blended towards
@@ -245,9 +318,12 @@ export class World {
   private readonly zoneIndex = new Map<ZoneId, number>();
 
   constructor(inputs: WorldInputs, weather: WeatherSource, seed: number) {
+    if (!Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) {
+      throw new Error(`seed must be an integer in 0…${MAX_SEED} (unsigned 32-bit), got ${seed}`);
+    }
     this.inputs = inputs;
     this.weather = weather;
-    this.seed = seed >>> 0;
+    this.seed = seed;
     inputs.zones.forEach((z, i) => this.zoneIndex.set(z.id, i));
     this.engine = new ClearingEngine(inputs.zones.length);
     for (const z of inputs.zones) {
@@ -272,12 +348,75 @@ export class World {
     return this.additions;
   }
 
-  /** Forget reservoir levels, storage charge and price history. */
+  /** Forget reservoir levels, storage charge and price history: back to the fresh starting state. */
   reset(): void {
     this.reservoir.clear();
     this.soc.clear();
     for (const w of this.windows.values()) w.reset();
     for (const m of this.neighbourPrice.values()) m.reset();
+  }
+
+  /** The state that carries into the next simulated year (see the contract above). */
+  snapshot(): WorldState {
+    const reservoirMwh: Record<ZoneId, number> = {};
+    for (const [z, v] of this.reservoir) reservoirMwh[z] = v;
+    const storageMwh: Record<string, number> = {};
+    for (const [k, v] of this.soc) storageMwh[k] = v;
+    const storagePrices: Record<ZoneId, number[]> = {};
+    for (const [z, w] of this.windows) storagePrices[z] = w.values();
+    const neighbourPrices: Record<ZoneId, number[]> = {};
+    for (const [z, m] of this.neighbourPrice) neighbourPrices[z] = m.values();
+    return { version: 1, reservoirMwh, storageMwh, storagePrices, neighbourPrices };
+  }
+
+  /** Load a state saved with `snapshot()` (from this world or another with the same zones). */
+  restore(state: WorldState): void {
+    const bad = (msg: string): never => {
+      throw new Error(`restore: ${msg}`);
+    };
+    if (state.version !== 1) bad(`unknown state version ${String(state.version)}`);
+    const finite = (v: unknown, what: string): number => {
+      if (typeof v !== 'number' || !Number.isFinite(v)) bad(`${what} must be a finite number`);
+      return v as number;
+    };
+    const zone = (z: string, what: string): void => {
+      if (!this.zoneIndex.has(z)) bad(`${what}: unknown zone ${z}`);
+    };
+    const reservoir = new Map<ZoneId, number>();
+    for (const [z, v] of Object.entries(state.reservoirMwh)) {
+      zone(z, 'reservoirMwh');
+      const hydro = this.inputs.zones.find((x) => x.id === z)?.hydro ?? null;
+      if (hydro === null) bad(`reservoirMwh: zone ${z} has no reservoir`);
+      const mwh = finite(v, `reservoirMwh.${z}`);
+      if (mwh < 0 || mwh > (hydro?.reservoirTwh ?? 0) * 1e6 + 1e-6) bad(`reservoirMwh.${z} is outside the reservoir`);
+      reservoir.set(z, mwh);
+    }
+    const soc = new Map<string, number>();
+    for (const [k, v] of Object.entries(state.storageMwh)) {
+      const [z = '', t = '', ...rest] = k.split('/');
+      zone(z, 'storageMwh');
+      if (rest.length > 0 || !(STORAGE_TECHS as readonly string[]).includes(t)) bad(`storageMwh: bad key ${k}`);
+      const mwh = finite(v, `storageMwh.${k}`);
+      if (mwh < 0) bad(`storageMwh.${k} is negative`);
+      soc.set(k, mwh);
+    }
+    const loadWindows = (src: Readonly<Record<string, readonly number[]>>, what: string): Map<ZoneId, number[]> => {
+      const out = new Map<ZoneId, number[]>();
+      for (const [z, values] of Object.entries(src)) {
+        zone(z, what);
+        if (!Array.isArray(values)) bad(`${what}.${z} must be an array`);
+        out.set(z, values.map((v, i) => finite(v, `${what}.${z}[${i}]`)));
+      }
+      return out;
+    };
+    const storagePrices = loadWindows(state.storagePrices, 'storagePrices');
+    const neighbourPrices = loadWindows(state.neighbourPrices, 'neighbourPrices');
+    // Everything checked: apply.
+    this.reset();
+    for (const [z, v] of reservoir) this.reservoir.set(z, v);
+    for (const [k, v] of soc) this.soc.set(k, v);
+    for (const [z, values] of storagePrices) this.windows.get(z)?.load(values);
+    for (const [z, values] of neighbourPrices) this.neighbourPrice.get(z)?.load(values);
   }
 
   /** Installed capacity in MW of a technology in a zone for a year, including additions. */
@@ -303,6 +442,9 @@ export class World {
   }
 
   simulateYear(year: number, options: SimulateOptions = {}): YearResult {
+    if (!Number.isInteger(year) || year < this.inputs.firstYear || year > this.inputs.lastYear) {
+      throw new Error(`year must be an integer in ${this.inputs.firstYear}…${this.inputs.lastYear} (the inputs' range), got ${year}`);
+    }
     const inputs = this.inputs;
     const zones = inputs.zones;
     const nz = zones.length;
@@ -390,16 +532,21 @@ export class World {
       rt: number;
       key: string;
     }
+    // New storage starts empty; if the energy capacity shrank since last year
+    // the energy above it is dropped, and storage that is gone loses its charge.
     const storage: StorageParams[][] = zones.map((z, zi) => {
       const list: StorageParams[] = [];
-      for (const t of ['pumped', 'battery'] as const) {
+      for (const t of STORAGE_TECHS) {
         const mw = capacity[zi]?.[t] ?? 0;
         const tech = inputs.technologies.get(t);
-        if (mw <= 0 || tech === undefined) continue;
-        const eta = Math.sqrt(tech.roundTripEfficiency);
         const key = `${z.id}/${t}`;
+        if (mw <= 0 || tech === undefined) {
+          this.soc.delete(key);
+          continue;
+        }
+        const eta = Math.sqrt(tech.roundTripEfficiency);
         const energyMwh = mw * tech.storageHours;
-        if (!this.soc.has(key)) this.soc.set(key, energyMwh / 2);
+        this.soc.set(key, Math.min(energyMwh, this.soc.get(key) ?? 0));
         list.push({ tech: t, powerMw: mw, energyMwh, etaC: eta, etaD: eta, rt: tech.roundTripEfficiency, key });
       }
       return list;
