@@ -12,9 +12,9 @@
  * provisional (`start: 'fresh'`).
  */
 import { loadPlaceholderInputs } from '../data/placeholder';
-import { SyntheticWeather, World, type StackRecord, type WorldInputs, type WorldState, type ZoneStats } from '../sim';
+import { MAX_SEED as MAX_SEED_VALUE, SyntheticWeather, World, type StackRecord, type WorldInputs, type WorldState, type ZoneStats } from '../sim';
 
-export { MAX_SEED } from '../sim';
+export const MAX_SEED = MAX_SEED_VALUE;
 export const FIRST_YEAR = 1995;
 export const LAST_YEAR = 2025;
 
@@ -132,7 +132,12 @@ export interface ErrorResponse {
   readonly message: string;
 }
 
-export type Response = YearResponse | SeriesYearResponse | SeriesDoneResponse | CannibalResponse | ErrorResponse;
+/** Posted once by the worker when it has loaded, so the page knows it is alive. */
+export interface ReadyResponse {
+  readonly kind: 'ready';
+}
+
+export type Response = YearResponse | SeriesYearResponse | SeriesDoneResponse | CannibalResponse | ErrorResponse | ReadyResponse;
 
 let cachedInputs: WorldInputs | null = null;
 let cachedWeather: SyntheticWeather | null = null;
@@ -153,6 +158,29 @@ export function zoneIds(): readonly string[] {
 
 export function zoneName(id: string): string {
   return inputs().zones.find((z) => z.id === id)?.name ?? id;
+}
+
+/** A seed typed or linked: an integer 0…4294967295 in plain digits (no sign, exponent or decimals), or null. */
+export function parseSeed(text: string): number | null {
+  const t = text.trim();
+  if (!/^\d{1,10}$/.test(t)) return null;
+  const v = Number(t);
+  return v <= MAX_SEED_VALUE ? v : null;
+}
+
+/** Zones linked to `id` in any year, in the inputs' zone order. */
+export function zoneNeighbours(id: string): readonly string[] {
+  const linked = new Set<string>();
+  for (const l of inputs().links) {
+    if (l.from === id) linked.add(l.to);
+    if (l.to === id) linked.add(l.from);
+  }
+  return zoneIds().filter((z) => linked.has(z));
+}
+
+/** Whether a zone has a hydro reservoir. */
+export function zoneHasReservoir(id: string): boolean {
+  return (inputs().zones.find((z) => z.id === id)?.hydro ?? null) !== null;
 }
 
 const now = (): number => (typeof performance !== 'undefined' ? performance.now() : 0);
@@ -301,23 +329,158 @@ export function runSeries(
 /** The share points of the solar curve. */
 export const CANNIBAL_SHARES: readonly number[] = [0, 0.1, 0.25, 0.5, 0.75, 1];
 
+/** One point of the solar curve: the year with `gw` of solar added, from the given start. */
+function cannibalPoint(req: CannibalRequest, gw: number, state: WorldState | null): CannibalPoint {
+  if (!zoneIds().includes(req.zone)) throw new Error(`unknown zone ${req.zone}`);
+  const world = newWorld(req.seed);
+  if (state !== null) world.restore(state);
+  if (gw > 0) world.addCapacity(req.zone, 'solar', gw * 1000);
+  const z = world.simulateYear(req.year).byZone[req.zone];
+  if (z === undefined) throw new Error(`unknown zone ${req.zone}`);
+  const s = z.stats.byTech.solar;
+  return { gw, capturePrice: s.capturePrice, captureRate: s.captureRate, meanPrice: z.stats.meanPrice, solarTwh: s.generationTwh };
+}
+
+const cannibalGw = (req: CannibalRequest, share: number): number => Math.round(req.maxGw * share * 10) / 10;
+
 /** Solar's earnings as more solar is added to the zone, for one year (from the same start as the year view). */
 export function runCannibal(req: CannibalRequest, shouldStop: () => boolean = () => false): CannibalResponse | null {
   const t0 = now();
+  const state = longRunState(req.seed, req.year);
   const points: CannibalPoint[] = [];
-  let start: StartState = 'fresh';
   for (const share of CANNIBAL_SHARES) {
     if (shouldStop()) return null;
-    const gw = Math.round(req.maxGw * share * 10) / 10;
-    const y = yearWorld(req.seed, req.zone, req.year, gw);
-    start = y.start;
-    const r = y.world.simulateYear(req.year);
-    const z = r.byZone[req.zone];
-    if (z === undefined) continue;
-    const s = z.stats.byTech.solar;
-    points.push({ gw, capturePrice: s.capturePrice, captureRate: s.captureRate, meanPrice: z.stats.meanPrice, solarTwh: s.generationTwh });
+    points.push(cannibalPoint(req, cannibalGw(req, share), state));
   }
-  return { kind: 'cannibal', gen: req.gen, seed: req.seed, zone: req.zone, year: req.year, start, points, ms: now() - t0 };
+  return { kind: 'cannibal', gen: req.gen, seed: req.seed, zone: req.zone, year: req.year, start: state === null ? 'fresh' : 'long-run', points, ms: now() - t0 };
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling: a newer request supersedes older work, and the user's year comes first.
+
+/** A unit of work split into steps of about one simulated year each. */
+interface Job {
+  readonly kind: RequestKind;
+  /** Run one step; true when the job has finished (and posted its last answer). */
+  step(): boolean;
+}
+
+/** Which kind runs first when several wait: the user's year, then the solar curve, then the long run. */
+const PRIORITY: readonly RequestKind[] = ['year', 'cannibal', 'series'];
+
+/**
+ * Runs requests cooperatively, one step (about one simulated year) at a
+ * time, handing control back between steps (`defer`) so that new requests
+ * are seen at once. Only the newest request of each kind is kept: an older
+ * one is dropped, and a running long run stops at the next year boundary
+ * (its years stay cached, so asking for that seed again resumes it). The
+ * year view runs before the solar curve, and both before the long run.
+ * Shared by the Web Worker and the in-page fallback.
+ */
+export class Scheduler {
+  private readonly latest: Record<RequestKind, number> = { year: -Infinity, cannibal: -Infinity, series: -Infinity };
+  private readonly jobs = new Map<RequestKind, Job>();
+  private scheduled = false;
+
+  constructor(
+    private readonly post: (r: Response) => void,
+    private readonly defer: (fn: () => void) => void,
+  ) {}
+
+  /** Accept a request; anything older of the same kind is abandoned. */
+  submit(req: Request): void {
+    if (!(req.gen > this.latest[req.kind])) return;
+    this.latest[req.kind] = req.gen;
+    this.jobs.set(req.kind, this.job(req));
+    this.kick();
+  }
+
+  /** Whether work is waiting or running (tests). */
+  get busy(): boolean {
+    return this.jobs.size > 0;
+  }
+
+  private kick(): void {
+    if (this.scheduled || this.jobs.size === 0) return;
+    this.scheduled = true;
+    this.defer(() => {
+      this.scheduled = false;
+      this.tick();
+    });
+  }
+
+  private tick(): void {
+    let job: Job | undefined;
+    for (const k of PRIORITY) {
+      job = this.jobs.get(k);
+      if (job !== undefined) break;
+    }
+    if (job === undefined) return;
+    let done: boolean;
+    try {
+      done = job.step();
+    } catch (err) {
+      this.post({ kind: 'error', gen: this.latest[job.kind], request: job.kind, message: err instanceof Error ? err.message : String(err) });
+      done = true;
+    }
+    if (done && this.jobs.get(job.kind) === job) this.jobs.delete(job.kind);
+    this.kick();
+  }
+
+  private job(req: Request): Job {
+    switch (req.kind) {
+      case 'year':
+        return {
+          kind: 'year',
+          step: () => {
+            this.post(runYear(req));
+            return true;
+          },
+        };
+      case 'cannibal': {
+        const t0 = now();
+        const state = longRunState(req.seed, req.year);
+        const points: CannibalPoint[] = [];
+        let i = 0;
+        return {
+          kind: 'cannibal',
+          step: () => {
+            const share = CANNIBAL_SHARES[i++] ?? 1;
+            points.push(cannibalPoint(req, cannibalGw(req, share), state));
+            if (i < CANNIBAL_SHARES.length) return false;
+            const start: StartState = state === null ? 'fresh' : 'long-run';
+            this.post({ kind: 'cannibal', gen: req.gen, seed: req.seed, zone: req.zone, year: req.year, start, points, ms: now() - t0 });
+            return true;
+          },
+        };
+      }
+      case 'series': {
+        const run = longRun(req.seed);
+        let reported = FIRST_YEAR;
+        return {
+          kind: 'series',
+          step: () => {
+            // Report what is cached (all at once), then simulate one more year.
+            while (reported < run.next) {
+              const stats = run.stats.get(reported);
+              if (stats !== undefined) this.post({ kind: 'seriesYear', gen: req.gen, seed: req.seed, year: reported, stats });
+              reported++;
+            }
+            if (run.next <= LAST_YEAR) {
+              const { year, stats } = stepLongRun(run);
+              this.post({ kind: 'seriesYear', gen: req.gen, seed: req.seed, year, stats });
+              reported = run.next;
+            }
+            if (run.next <= LAST_YEAR) return false;
+            this.post({ kind: 'seriesDone', gen: req.gen, seed: req.seed, ms: run.ms });
+            return true;
+          },
+        };
+      }
+      default:
+        throw new Error('unknown request');
+    }
+  }
 }
 
 /** Run one request to the end and post its answers (errors become error responses). */

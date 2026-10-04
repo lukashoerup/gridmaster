@@ -62,6 +62,39 @@ header h1 {
   gap: 4px;
   font-size: 0.85rem;
   color: var(--muted);
+  min-width: 0;
+}
+
+.control .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.control .row > input,
+.control .row > select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.control .hint {
+  font-size: 0.78rem;
+}
+
+.control .error {
+  color: #a4161a;
+  font-size: 0.8rem;
+  min-height: 0;
+}
+
+.control .error:empty {
+  display: none;
+}
+
+.control input[aria-invalid='true'] {
+  border-color: #a4161a;
+  outline-color: #a4161a;
 }
 
 .control .label {
@@ -74,7 +107,7 @@ header h1 {
 }
 
 .control select,
-.control input[type='number'] {
+.control input[type='text'] {
   font: inherit;
   padding: 6px 8px;
   border: 1px solid var(--line);
@@ -95,9 +128,96 @@ header h1 {
   min-height: 36px;
 }
 
+.control .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.control .value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Sliders: a thin track with a large thumb, easy to grab on a phone. */
 .control input[type='range'] {
   width: 100%;
   min-height: 32px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.control input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.control input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.control input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.control input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Phones: every control at least 44 px tall, and bigger slider thumbs. */
+@media (max-width: 600px) {
+  .control select,
+  .control input[type='text'],
+  .control button {
+    min-height: 44px;
+  }
+
+  .control input[type='range'] {
+    min-height: 44px;
+  }
+
+  .control input[type='range']::-webkit-slider-thumb {
+    width: 30px;
+    height: 30px;
+    margin-top: -12px;
+  }
+
+  .control input[type='range']::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.notice {
+  background: #fde8e8;
+  color: #7a1010;
+  border-left: 4px solid #c53030;
+  padding: 8px 12px;
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.notice[hidden] {
+  display: none;
 }
 
 #status {
@@ -172,6 +292,22 @@ body.busy #status::after {
   margin: 6px 0 0;
   font-size: 0.86rem;
   color: var(--muted);
+}
+
+.card .note {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+}
+
+.card .note[hidden] {
+  display: none;
+}
+
+.card .note.provisional {
+  color: var(--warn-ink);
+  background: var(--warn-bg);
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 footer {

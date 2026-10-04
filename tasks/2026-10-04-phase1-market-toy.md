@@ -4,7 +4,9 @@ Model: opus — Opus builds everything since 2026-10-04 (workbench `docs/roles.m
 
 ## Status
 **In progress.** Parts (a) core and (d) explorer were built on 2026-10-04 on
-placeholder inputs (branch `claude/wizardly-ritchie-anzv17`). Parts (b)
+placeholder inputs (branch `claude/wizardly-ritchie-anzv17`), then tested by
+three reviewers and fixed the same day (see the last working-notes section;
+follow-ups listed there). Parts (b)
 real-data pipeline and (c) calibration are **blocked on network access**
 (decision Q5): the environment still blocks Copernicus, Ember, Energinet and
 the World Bank, so no real data was fetched and none of unknown licence was
@@ -55,9 +57,10 @@ judgement: do the prices behave like the real ones?
       — *page built (`npm run build` → `dist/`); the preview link is the
       coordinator's publishing step*
 - [x] Headless speed recorded (target: one simulated year, four zones, < 1 s)
-- [ ] Tests green in CI; `CLAUDE.md` gains the test command
-      — *77 tests green locally and the workflow is in place; the first CI run
-      happens when the branch is pushed; `CLAUDE.md` has the commands*
+- [x] Tests green in CI; `CLAUDE.md` gains the test command
+      — *CI green on every push of the branch (last checked: the 10:42 push of
+      2026-10-04, after the market and core fixes); 158 tests locally after
+      the explorer fixes, including Phase 2's; `CLAUDE.md` has the commands*
 
 ## Prerequisites to check before starting
 - Every dataset gets its row in `docs/licences.md` **before** it is committed;
@@ -220,8 +223,8 @@ world). Must-run CHP has no heat storage or bypass.
 Hydro has one reservoir per zone. The explorer's selected year starts from
 the long run's state of 1 January (provisional, from standard levels, until
 the long run gets there), so it matches the long-run charts.
-The page was not viewed in a browser in this environment (none available);
-its protocol and chart builders are tested headless. `npm install` needs
+The page was first checked headless only; since the tester fixes it is also
+driven in Chromium with Playwright (timings below). `npm install` needs
 `legacy-peer-deps` (in `.npmrc`) because npm 10 crashes resolving vitest
 4's optional peers; `npm ci` is unaffected. ECharts makes the bundle 657 kB
 (224 kB gzipped).
@@ -359,4 +362,106 @@ from the report's reproduction where there was one.
   183, DE within 0.5 €/MWh; DE negative hours 2024: 1,164 → 1,169 (seed 42),
   1,041 → 1,132 (seed 1).
 - Golden hash: `8ff7768adee91c59` → `e0003bc8c6be7e77` (F5, F8, F16, B3, B7).
+
+**Explorer (`src/explorer/`).** Measured in Chromium (Playwright) against a
+fresh `npm run build` served from a nested folder, at 390×844 (phone, touch)
+and 1280×800; scripts and screenshots in the session scratchpad `fixes/`.
+- M1: control changes are coalesced (250 ms); every request carries a
+  generation id; the worker runs a cooperative `Scheduler` (shared with the
+  in-page fallback) that keeps only the newest request of each kind, runs
+  the chosen year before the solar curve before the long run, and stops a
+  superseded long run at the next year boundary (its years stay cached and
+  resume). The long run is the per-seed baseline, so zone, year and slider
+  changes never restart it. Latest choice on screen, before → after
+  (laptop / phone): 5 zone changes 150 ms apart 55.9 s → 1.6 / 1.5 s
+  (everything settled 68.7 s → 4.2 / 4.1 s); 10 × New seed 116 s → 1.5 /
+  1.4 s on screen, final (from the new seed's long run) 15.1 / 14.3 s;
+  15 × Year arrow 35 s → 1.7 / 1.7 s; 8 solar-slider key presses 87 s →
+  1.4 / 1.4 s; 5 seed entries (QA: 5 spinner steps, ~70 s) → 1.8 / 1.8 s;
+  year change during the first load 13.1 s → 1.0 / 1.0 s. Never more than
+  one long run in flight (no long-run year posted later than 1 s after it
+  was superseded); the status line describes the user's own request first,
+  then the solar curve and the long run.
+- M2: the solar slider asks only for the year (no long run, no solar curve);
+  everything is drawn from the payload's own zone, year, seed and added
+  solar. After a drag and release with a week nudge, the summary showed the
+  new value after 1.0 s (laptop and phone; was ~12 s), and in 24–26 samples
+  at 50 ms intervals never paired a slider value with another answer. The
+  "Now" dot is the year payload's own point and sits on the curve.
+- m1: the busy indicator tracks the newest request of each kind, not a count.
+- m3: the solar curve runs before the long run: on first load a
+  provisional curve after 3.4 s (was ~14 s), final at ~18 s once the long
+  run reaches the year; after a zone change the final curve in 3.3 s (was
+  ~14 s).
+- m8: the long-run charts are the baseline (captions say so); capture-rate
+  axes have no fixed minimum and show gaps where the rate is `null`.
+- m2 / m6: the offers chart clips to its grid; partly run blocks are drawn
+  solid for the part that ran and faded for the rest; a note above it says
+  whether a local offer, the coupled neighbour, storage charging or the
+  regulated tariff set the price (the tariff and the market price
+  underneath are both drawn in regulated hours); the caption no longer
+  claims the local offers always set the price.
+- m7: week caption says a shortfall is imports; regulated years say the
+  price was a flat tariff (week, sorted-hours and solar captions); the
+  long-run caption names only neighbours and reservoirs that exist (Spain:
+  no neighbour, its own reservoirs).
+- m4 / m5: one short date per day on the week axis ("1 Jul"), every other
+  day below 480 px; legends wrap (plain, not paged), the plot moves down
+  for every row, price first, shorter technology names.
+- m9: the seed box is a text field accepting only whole numbers
+  0…4294967295 (digits only), with a visible message otherwise and the old
+  seed kept; labelled "Weather variation (seed)" with a one-line hint; the
+  address round-trips (seed 4294967295 reloads as itself).
+- m10: the worker must say it is ready within 8 s; an error event or a
+  missing answer switches to the in-page scheduler and shows a notice
+  (worker 404: notice after 1.8 s, year on screen after 5.3 s). Without
+  Worker support the page stays responsive between simulated years
+  (round trips 75–411 ms during the long run, was a ~14 s freeze).
+- m11: `hashchange` is handled; `#solar` is rounded to the slider's step and
+  clamped (3.33 → 3.5 GW, label and thumb agree); empty or non-integer
+  values are ignored (`#week=` keeps the current week).
+- m12: the week slider redraws only the week and offers charts (16 ms per
+  step), the hour slider only the offers chart (5 ms); was 50–70 ms.
+- m13: below 600 px every control is at least 44 px tall and slider thumbs
+  are 30 px; checked at 320–600 px.
+- c1–c5: the offers chart's labels moved into the note (no overlap) and its
+  axes end on round numbers; the sorted-hours chart has a value axis; mean,
+  lowest and highest share one rounding; "net imports X TWh"; small fleets
+  in MW, "no capacity yet" at zero; units in every tooltip and the sorted
+  hours tooltip states a rank; the week slider has 52 steps of 7 days, the
+  last one the year's final 7 days (25–31 Dec).
+- First impression: every chart title names its zone and year (and week or
+  hour); the solar chart's caption names the "Add solar to this zone"
+  slider; the capture rate is dashed, purple and on its own right axis.
+- Checks: no horizontal scroll at 320, 360, 390, 414, 600, 768, 900, 1280
+  and 1920 px; no console errors or failed requests in any run.
+- The Phase 2 merge: its chapter test ran a leveraged bot on seed 42, which
+  survived on main but goes bankrupt after these fixes (DK1's prices move by
+  well under 1 €/MWh; the bot's survival flips per seed both before and
+  after). The test now uses seed 99, which reaches 2025 either way; a note
+  for the Phase 2 owner, since the test is fragile to any market change.
+
+**Follow-ups, deliberately not done now.**
+- B1: Norway's extremes: price-responsive demand (industry, boilers, a
+  value-of-lost-load step), a water value driven by expected remaining
+  inflow, spill logic from headroom, a small positive bid for forced output.
+- B2: boundary zones (FR, NL/BE, AT/CH/CZ/PL, SE, GB, PT) with external
+  prices or simple supply curves.
+- B3 (rest): a better storage strategy (day-ahead schedule against a short
+  forecast, or bids by state of charge); the window fix is done.
+- B4: thermal tranches (5–10 per fleet from data) and commitment or ramping
+  costs; this also leaves DE pumped storage idle in 1995–1998.
+- B5: correlated cold and calm weather (demand from the same weather year)
+  and seeded forced outages.
+- B8: negative-price depth (vintage bids, a production-linked bid) and
+  Spain's onset.
+- B9: run in UTC with local-time demand shapes and daylight saving.
+- B10: explicit DK1–DE auctions before ~2010 instead of perfect coupling.
+- B11 (important for Phase 2): the player's assets need their own bids, not
+  the fleet's subsidy bids.
+- F14: performance for ~40 zones (14 zones in a chain: 6.7 s per year; 40 in
+  a chain: 56.5 s; 40 unlinked: 3.8 s).
+- A question for Lukas (QA design question): when coupled zones are both
+  short, unserved energy is shared in proportion to demand, so a zone can
+  export while shedding load. Players will see this; is that the rule?
 
