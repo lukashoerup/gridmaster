@@ -254,6 +254,18 @@ select {
   letter-spacing: 0.02em;
 }
 
+/* Round 1's tuned comparison mode (play.html?tuned=1) says so on screen. */
+.tuned-badge {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .speeds {
   display: flex;
   gap: 4px;

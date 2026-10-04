@@ -10,6 +10,7 @@ import {
   START_YEAR,
   MarketProvider,
   advance,
+  answerOffer,
   closeYear,
   companyValue,
   dateLabel,
@@ -34,10 +35,12 @@ import { count, money, mw, mwh, price } from './format';
 import { createMap } from './map';
 import { assetsPanel, buildPanel, financePanel, reportsPanel, type DeskContext, type Panel } from './panels';
 import { reportBody } from './report';
-import { clearSave, readSave, writeSave } from './storage';
+import { clearSave, readSave, tunedMode, writeSave } from './storage';
 import './style.css';
 
 const inputs = loadPlaceholderInputs();
+/** Round 1's comparison mode (tasks/2026-10-04-fun-core-toy.md part c): `play.html?tuned=1`. */
+const TUNED = tunedMode();
 const HOURS_PER_SECOND = 8760 / SECONDS_PER_YEAR_AT_X1;
 const HOUSEHOLD_MWH = 4;
 
@@ -89,7 +92,13 @@ const [homesBox, homesEl] = figure('Homes supplied');
 const topbar = h(
   'header',
   { class: 'topbar' },
-  h('div', { class: 'when' }, h('div', { class: 'date-line' }, dateEl, hourEl), phaseEl),
+  h(
+    'div',
+    { class: 'when' },
+    h('div', { class: 'date-line' }, dateEl, hourEl),
+    phaseEl,
+    TUNED ? h('div', { class: 'tuned-badge', text: 'Test version: income ×3, three offers' }) : null,
+  ),
   h('div', { class: 'speeds', role: 'group', 'aria-label': 'Game speed' }, ...speedButtons),
   h('div', { class: 'stats' }, cashBox, valueBox, mwBox, homesBox),
 );
@@ -252,7 +261,7 @@ function startNewGame(): void {
   showBusy('A new game', 'Preparing the weather and the market for 1995…', null);
   window.setTimeout(() => {
     const provider = new MarketProvider(inputs, seed);
-    const state = newGame(seed, inputs);
+    const state = newGame(seed, inputs, { tuned: TUNED });
     const market = openYear(state, provider);
     session = { state, market, provider };
     preparing = false;
@@ -389,6 +398,26 @@ function renderCard(force = false): void {
       const look = h('button', { type: 'button', class: 'quiet', text: 'Look around' });
       look.addEventListener('click', dismiss);
       buttons.push(again, look);
+    } else if (card.kind === 'offer') {
+      // Round 1's tuned mode: accepting can fail (cash, room), which keeps the card open.
+      const status = h('p', { class: 'muted small', role: 'status' });
+      const answer = (accept: boolean): void => {
+        const r = answerOffer(state, accept);
+        if (!r.ok) {
+          status.textContent = r.message;
+          return;
+        }
+        shownCard = null;
+        renderCard();
+        save(true);
+        slowRender(true);
+      };
+      const yes = h('button', { type: 'button', class: 'primary', text: 'Accept' });
+      const no = h('button', { type: 'button', class: 'quiet', text: 'No, thanks' });
+      yes.addEventListener('click', () => answer(true));
+      no.addEventListener('click', () => answer(false));
+      nodes.push(status);
+      buttons.push(yes, no);
     } else {
       const next = card.kind === 'annual' && state.cards.length === 1 && state.over === null;
       const label =
