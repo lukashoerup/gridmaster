@@ -1,0 +1,170 @@
+{
+  "status": "placeholder, unverified",
+  "note": "Technology parameters for the market toy. Efficiencies, emission factors, variable O&M, availability and must-run behaviour are rounded textbook-style values from general knowledge, not from a dataset; to be replaced by DEA Technology Data / NREL ATB figures (CC BY 4.0) in part (b). mustRunShare is the share of available capacity that keeps running (inflexible plant, CHP, nuclear minimum load) and bids mustRunBid below zero. Storage 'hours' is energy at full power.",
+  "units": {
+    "efficiency": "MWh electric per MWh fuel, by year",
+    "emissionFactor": "tCO2 per MWh fuel",
+    "variableOm": "EUR/MWh electric",
+    "mustRunBid": "EUR/MWh",
+    "bid": "EUR/MWh",
+    "hours": "h"
+  },
+  "technologies": [
+    {
+      "id": "nuclear",
+      "kind": "thermal",
+      "fuel": "nuclear",
+      "efficiency": [
+        [
+          1995,
+          0.33
+        ]
+      ],
+      "emissionFactor": 0,
+      "variableOm": 7,
+      "availability": 0.85,
+      "mustRunShare": 0.6,
+      "mustRunBid": -15
+    },
+    {
+      "id": "lignite",
+      "kind": "thermal",
+      "fuel": "lignite",
+      "efficiency": [
+        [
+          1995,
+          0.36
+        ],
+        [
+          2025,
+          0.4
+        ]
+      ],
+      "emissionFactor": 0.4,
+      "variableOm": 4,
+      "availability": 0.85,
+      "mustRunShare": 0.35,
+      "mustRunBid": -10
+    },
+    {
+      "id": "coal",
+      "kind": "thermal",
+      "fuel": "coal",
+      "efficiency": [
+        [
+          1995,
+          0.38
+        ],
+        [
+          2025,
+          0.42
+        ]
+      ],
+      "emissionFactor": 0.34,
+      "variableOm": 3.5,
+      "availability": 0.85,
+      "mustRunShare": 0.12,
+      "mustRunBid": -5
+    },
+    {
+      "id": "gas_ccgt",
+      "kind": "thermal",
+      "fuel": "gas",
+      "efficiency": [
+        [
+          1995,
+          0.48
+        ],
+        [
+          2025,
+          0.58
+        ]
+      ],
+      "emissionFactor": 0.2,
+      "variableOm": 2.5,
+      "availability": 0.9,
+      "mustRunShare": 0.05,
+      "mustRunBid": -5
+    },
+    {
+      "id": "gas_ocgt",
+      "kind": "thermal",
+      "fuel": "gas",
+      "efficiency": [
+        [
+          1995,
+          0.36
+        ]
+      ],
+      "emissionFactor": 0.2,
+      "variableOm": 5,
+      "availability": 0.92,
+      "mustRunShare": 0,
+      "mustRunBid": 0
+    },
+    {
+      "id": "oil",
+      "kind": "thermal",
+      "fuel": "oil",
+      "efficiency": [
+        [
+          1995,
+          0.36
+        ]
+      ],
+      "emissionFactor": 0.27,
+      "variableOm": 6,
+      "availability": 0.9,
+      "mustRunShare": 0,
+      "mustRunBid": 0
+    },
+    {
+      "id": "biomass",
+      "kind": "thermal",
+      "fuel": "biomass",
+      "efficiency": [
+        [
+          1995,
+          0.35
+        ]
+      ],
+      "emissionFactor": 0,
+      "variableOm": 4,
+      "availability": 0.85,
+      "mustRunShare": 0.5,
+      "mustRunBid": -5
+    },
+    {
+      "id": "hydro_ror",
+      "kind": "hydro_ror",
+      "meanCf": 0.55,
+      "bid": -2
+    },
+    {
+      "id": "hydro_res",
+      "kind": "hydro_res",
+      "availability": 0.95,
+      "bid": 0
+    },
+    {
+      "id": "pumped",
+      "kind": "storage",
+      "hours": 8,
+      "roundTripEfficiency": 0.75
+    },
+    {
+      "id": "battery",
+      "kind": "storage",
+      "hours": 2,
+      "roundTripEfficiency": 0.88
+    },
+    {
+      "id": "wind",
+      "kind": "variable"
+    },
+    {
+      "id": "solar",
+      "kind": "variable"
+    }
+  ]
+}

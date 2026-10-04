@@ -1,0 +1,23 @@
+{
+  "status": "placeholder, unverified",
+  "note": "Parameters of the synthetic weather generator that stands in for real ERA5/PECD weather-years until part (b). Cross-zone correlation of daily wind regimes (Western Denmark and Germany move together, Norway follows at a distance, Spain is largely independent), daily cloudiness correlation, a mild tendency for calm days to be sunny, and the persistence (AR(1) coefficients) of wind regimes, cloudiness and hydro inflow. All invented; the real pipeline replaces the generator entirely, so these numbers never ship.",
+  "zoneOrder": ["DK1", "DE", "NO", "ES"],
+  "windCorrelation": [
+    [1.0, 0.75, 0.5, 0.1],
+    [0.75, 1.0, 0.35, 0.15],
+    [0.5, 0.35, 1.0, 0.05],
+    [0.1, 0.15, 0.05, 1.0]
+  ],
+  "solarCorrelation": [
+    [1.0, 0.6, 0.4, 0.1],
+    [0.6, 1.0, 0.3, 0.2],
+    [0.4, 0.3, 1.0, 0.05],
+    [0.1, 0.2, 0.05, 1.0]
+  ],
+  "windSolarCorrelation": -0.3,
+  "windDailyPhi": 0.65,
+  "windHourlyPhi": 0.9,
+  "cloudDailyPhi": 0.5,
+  "inflowDailyPhi": 0.85,
+  "inflowDailySigma": 0.3
+}

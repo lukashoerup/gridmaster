@@ -1,0 +1,10 @@
+{
+  "status": "placeholder, unverified",
+  "note": "Interconnector capacities in MW by year (one symmetric figure per link, interpolated between the years given). Rough recollections: the Jutland-Germany border about 1.2-1.5 GW growing to about 3.5 GW by 2025; Skagerrak (DK1-NO) about 1 GW, 1.7 GW from the 2014/15 fourth cable; NordLink (DE-NO) 1.4 GW from 2021. Spain has no modelled neighbour in the toy. To be replaced by ENTSO-E / TSO figures in part (b).",
+  "units": { "capacityMw": "MW by year, both directions" },
+  "links": [
+    { "id": "DK1-DE", "from": "DK1", "to": "DE", "capacityMw": [[1995, 1200], [2000, 1300], [2010, 1500], [2015, 1700], [2020, 2500], [2022, 2800], [2025, 3500]] },
+    { "id": "DK1-NO", "from": "DK1", "to": "NO", "capacityMw": [[1995, 1000], [2014, 1000], [2015, 1700], [2025, 1700]] },
+    { "id": "DE-NO", "from": "DE", "to": "NO", "capacityMw": [[2020, 0], [2021, 1400], [2025, 1400]] }
+  ]
+}

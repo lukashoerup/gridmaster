@@ -1,0 +1,25 @@
+{
+  "name": "gridmaster",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Renewable-energy tycoon game: Phase 1 market simulation core and explorer page.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "bench": "vitest run tests/speed.test.ts --reporter=verbose"
+  },
+  "dependencies": {
+    "echarts": "6.1.0"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  }
+}
