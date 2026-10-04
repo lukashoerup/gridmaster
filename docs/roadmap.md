@@ -2,9 +2,9 @@
 
 **Current phase: 1 — market toy.** Phase 0 closed 2026-10-04: research done,
 direction, technology, platforms and first-release scope decided (D6–D9 in
-`docs/decisions.md`). Next up: the Phase 1 task and, in parallel, the design
-of the one-zone prototype. Open: Q5 (network access), needed for real data
-and the verification pass.
+`docs/decisions.md`). The Phase 2 prototype is already designed and approved
+(`docs/design/one-zone-prototype.md`, D10–D12). Next up: the Phase 1 task.
+Open: Q5 (network access), needed for real data and the verification pass.
 
 ## The principle: find the fun before adding content
 Lukas's constraint (decision D5) is a realistic scope with no compromise on
@@ -39,8 +39,8 @@ proven on one zone before Europe is built.
   Germany from 2008; solar's own price sagging as solar is built.
 
 ### Phase 2 — One-zone prototype: is the core loop fun?
-- **Build:** ugly but playable in a browser. One zone (proposed: Western
-  Denmark, 1995–2025, about an hour), the panel-to-market loop: a few panels
+- **Build:** ugly but playable in a browser. One zone (Western
+  Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
   and a first wind turbine under fixed tariffs, the hourly market from 1999,
   your own building lowering your price, answers in east-west panels,
   batteries and contracts. Loans, speed controls, "why did my price drop?".

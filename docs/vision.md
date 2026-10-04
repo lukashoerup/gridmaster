@@ -137,8 +137,9 @@ hovering, which serves the Deck now and keeps a tablet version possible.
 Mobile is not a launch platform (decision D8); the phone is where Lukas
 reviews builds in a browser.
 
-## Open design questions (for the design task, not for Lukas yet)
-- May the player own fossil plants (Ørsted began as DONG, an oil-and-gas
-  company), or only buy and convert them for their grid connection?
-- Discrete sites per zone, or tiles on a map of real resource potential?
-- "Gridmaster" as an in-game rank ("become Europe's Gridmaster")?
+## Design questions, as resolved by the prototype design (2026-10-04)
+- **Fossil plants:** never built by the player; late in the game, retiring
+  ones can be bought for their grid connections and converted (D12).
+- **Sites or tiles:** discrete sites on a stylised map for the prototype;
+  the vertical slice may revisit it (`docs/design/one-zone-prototype.md` §10).
+- **"Gridmaster" as an in-game rank:** waits for the naming decision (D3).

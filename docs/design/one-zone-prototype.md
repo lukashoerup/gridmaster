@@ -1,9 +1,9 @@
 # One-zone prototype — design (Phase 2)
 
-**Status:** draft for Lukas, 2026-10-04 (three questions in §10). Built after
-the Phase 1 market toy, on top of its simulation core. Implements the vision
-(D6) within the approved stack (D7). Task:
-`tasks/2026-10-04-first-playable-design.md`.
+**Status:** approved by Lukas 2026-10-04 with his answers to §10 (D10–D12).
+Built after the Phase 1 market toy, on top of its simulation core.
+Implements the vision (D6) within the approved stack (D7). Numbers are tuning
+values; changing the design's choices in §10 needs Lukas.
 
 ## The five-minute version
 - **Where and when:** Western Denmark (the DK1 price zone: Jutland and Funen),
@@ -46,9 +46,10 @@ can matter in it.
 | Neighbours available from Phase 1 | Germany and Norway are toy zones | Its neighbours are mostly not toy zones |
 | Story and marketing | Lukas's home; the wind-cooperative country; a "Danish tycoon" angle [report] | Energiewende |
 
-**Recommendation: DK1** — question P1 in §10. One cost: the brief starts with
-buying solar panels, and in 1990s Denmark solar barely paid while wind did
-(question P2). Germany stays the strongest candidate for the vertical slice.
+**Decided: DK1** (D10). One cost: the brief starts with solar panels, and in
+1990s Denmark solar barely paid while wind did — settled by starting with
+panels already on the barn and wind as the first big buy (D11). Germany stays
+the strongest candidate for the vertical slice.
 
 ## 2. The first 45 minutes, step by step
 Times are targets at mixed speeds, tuned in playtests (§6).
@@ -252,8 +253,20 @@ Designed at 1280×800, nothing reachable only by hovering (D8).
 └─────────────────────────────────────────────┘
 ```
 
-**Finance** shows cash, debt, company value, loans and their rates, the
-year's cash flow, and assets with age and end of tariff. **Annual report**
+**Finance**
+```
+┌ Finance · 2013 ──────────────────────────────┐
+│ Cash €4.2m   Debt €61m   Company value €38m  │
+│ Loans: 9 · average rate 3.4% · next due €2.1m│
+│ This year: revenue  €14.8m   O&M     −€3.1m  │
+│            interest −€2.2m   repaid  −€4.9m  │
+│ Assets: 31 turbines (5 near end of tariff)   │
+│         3 solar parks · 0 batteries          │
+│ [Borrow]  [Repay early]  [Sell an asset]     │
+└──────────────────────────────────────────────┘
+```
+
+**Annual report**
 ends each year in one card — earnings, best and worst asset, what changed in
 the market — and is the natural place to stop a session.
 
@@ -361,17 +374,11 @@ while every other stays at bronze or below.
 - Euro, nominal, for all years.
 - "Gridmaster" as an in-game rank waits for the naming decision (D3).
 
-**Questions for Lukas** (taste):
-- **P1. Which country is the prototype?** Recommended: Western Denmark (§1).
-  Alternative: Germany, the clearest solar-first story, where the player's own
-  building barely moves the price.
-- **P2. The opening.** Recommended: start with a few panels already on the
-  barn, earning a small trickle, with wind as the first big buy — historically
-  honest, since 1990s Danish solar barely paid. Alternative: the first action
-  is buying panels that pay well thanks to a generous grant — closer to the
-  brief's wording, less realistic.
-- **P3. Fossil plants, in the full game.** Recommended: the player never builds
-  fossil plants; late in the game they can buy retiring ones for their grid
-  connections and convert them (storage, power-to-X). Alternatives: never touch
-  fossil at all; or allow owning fossil plants (the oil-and-gas-to-offshore
-  arc of DONG/Ørsted). The prototype has no fossil ownership either way.
+**Decided by Lukas** (2026-10-04, each the recommended option):
+- **P1 → D10.** The prototype is Western Denmark. (Alternative was Germany.)
+- **P2 → D11.** Start with a few panels already on the barn earning a trickle;
+  wind is the first big buy. (Alternative was buying panels that pay well
+  thanks to a generous grant.)
+- **P3 → D12.** In the full game the player never builds fossil plants, but
+  late on can buy retiring ones for their grid connections and convert them.
+  (Alternatives were never touching fossil, or owning it like DONG/Ørsted.)
