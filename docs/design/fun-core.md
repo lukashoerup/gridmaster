@@ -143,6 +143,9 @@ D19. Task: `tasks/2026-10-04-fun-core-toy.md`.
 | **Toy 2, "The board"** (review's F) | Is fighting your own falling price fun? One hub's typical day as the board: drop wind and sun blocks and watch the curve sag; drag battery energy from blue hours to red; rivals' blocks arrive | One session |
 | **Slice 1, tuned** | Was the old core broken, or only its numbers? Income ×3 and three stub offers | Tiny |
 
+**Recording:** a private test sheet records each tester, and its scorecard
+applies the rules below (task file, "Shared").
+
 **Pass** (written before coding; review §2):
 - three of four testers play past the 15-minute stop unprompted;
 - the median is at least one logged decision a minute;

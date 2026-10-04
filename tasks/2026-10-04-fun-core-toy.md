@@ -82,6 +82,16 @@ its own. The pass and fail criteria are written before coding (design,
 - [ ] Private previews published.
 - [ ] Lukas told, in plain words, what to try, and given the pass/fail
       questions to ask testers (design, "Round 1").
+- [x] **The test sheet** (private artifact, 2026-10-04):
+      https://claude.ai/artifact/CuULHBA3XAWhQgrmi9Wf2M. It links the three
+      games, says how to run a session, and records each tester: the
+      questions, Lukas's judgement of their money rule, and the pasted
+      session log. Its scorecard applies the design's pass and fail rules
+      per toy, with the tuned slice 1 as the yardstick. The answers live in
+      the artifact's `db`, collection `sessions`, so a session can read them
+      with ArtifactData `list`. Toy 2's log yields decisions a minute and the
+      longest pause between moves; toy 1's log yields its own summary.
+      Viewers who cannot write get a Copy button instead.
 
 ## Scope
 **May change:**
