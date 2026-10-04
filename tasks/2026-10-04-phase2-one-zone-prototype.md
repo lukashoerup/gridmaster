@@ -10,8 +10,11 @@ published). **Playtest 1 (Lukas, 2026-10-04): "not fun yet".** It is
 passive, a cash-waiting loop, with no stats per asset after interest, no
 offshore and expensive setups out of reach
 (`docs/reviews/2026-10-04-playtest-1.md`). A redesign with a new slice order
-is proposed (`docs/design/running-the-company.md`, **Q8**). **Do not start
-slice 2 until Q8 is answered.**
+was proposed (`docs/design/running-the-company.md`, Q8), then set aside by
+**D17 (fun first)**. **Slices 2–5 are paused.** The next step is the
+fun-core toy (`docs/design/fun-core.md`, Q9;
+`tasks/2026-10-04-fun-core-toy.md`). Once the toy shows a fun core, this
+task is re-planned on top of it.
 
 ## Goal
 Turn `docs/design/one-zone-prototype.md` (Western Denmark, 1995–2025,
