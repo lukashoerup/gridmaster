@@ -59,6 +59,11 @@ judgement: do the prices behave like the real ones?
 - Architecture rules from the report's build section apply from the first
   commit: fixed one-hour timestep, seeded RNG in the save, no wall-clock or
   UI imports inside the simulation, money in integer cents.
+- Keep each run's hourly zone prices retrievable, either stored or
+  recomputable deterministically, and keep an asset's revenue a pure
+  function of its output and those prices. Phase 2's "called it" reveals
+  and trading desk re-price single assets against them
+  (`docs/design/one-zone-prototype.md` §4.9, §4.12; D14).
 
 ## Scope
 **May change:** the simulation package, `data/` (processed, licence-checked

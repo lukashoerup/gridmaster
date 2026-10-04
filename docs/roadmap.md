@@ -3,7 +3,8 @@
 **Current phase: 1 — market toy.** Phase 0 closed 2026-10-04: research done,
 direction, technology, platforms and first-release scope decided (D6–D9 in
 `docs/decisions.md`). The Phase 2 prototype is already designed and approved
-(`docs/design/one-zone-prototype.md`, D10–D12). Next up: the Phase 1 task.
+(`docs/design/one-zone-prototype.md`, D10–D12, with its reward layer D14).
+Next up: the Phase 1 task.
 Open: Q5 (network access), needed for real data and the verification pass.
 
 ## The principle: find the fun before adding content
@@ -44,7 +45,9 @@ proven on one zone before Europe is built.
   and a first wind turbine under fixed tariffs, the hourly market from 1999,
   your own building lowering your price, answers in east-west panels,
   batteries and contracts. Loans, speed controls, "why did my price drop?".
-  Design: `docs/design/one-zone-prototype.md`.
+  A reward layer (D14): company levels, an offer deck, one named rival,
+  "called it" reveals, celebrated jackpots and records, restructuring
+  before game over. Design: `docs/design/one-zone-prototype.md`.
 - **Gate:** Lukas and 3–5 friends play for about an hour. Does
   cannibalisation read as a puzzle rather than a punishment, and do they want
   to keep going? Pass criteria are in the design's playtest plan. Iterate
