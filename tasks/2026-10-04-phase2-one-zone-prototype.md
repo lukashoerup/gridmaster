@@ -13,7 +13,8 @@ offshore and expensive setups out of reach
 was proposed (`docs/design/running-the-company.md`, Q8), then set aside by
 **D17 (fun first)**. **Slices 2–5 are paused.** The next step is the
 fun-core toy (`docs/design/fun-core.md`, Q9;
-`tasks/2026-10-04-fun-core-toy.md`). Once the toy shows a fun core, this
+`tasks/done/2026-10-04-fun-core-toy.md`, built; results in
+`tasks/2026-10-04-round1-results.md`). Once the toy shows a fun core, this
 task is re-planned on top of it.
 
 ## Goal

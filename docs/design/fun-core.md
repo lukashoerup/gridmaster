@@ -134,7 +134,8 @@ The review adds two, and both fit "longer plans":
 
 ## Round 1: test before rebuilding
 Round 1 has one variable per test; it is the review's §2, reshaped by
-D19. Task: `tasks/2026-10-04-fun-core-toy.md`.
+D19. Built in `tasks/done/2026-10-04-fun-core-toy.md`; the results are read
+in `tasks/2026-10-04-round1-results.md`.
 
 | Test | What it answers | Cost |
 |---|---|---|
@@ -171,8 +172,15 @@ applies the rules below (task file, "Shared").
 - rivals' flags and zoom-in days.
 
 ### Round 1 so far (2026-10-04)
-What the builds taught before any human played; the human results go here
-when they come in.
+What the builds taught before any human played, then the human result.
+
+- **The human result (Lukas, 2026-10-04): none of the three is fun.** Toy 1
+  felt random; toy 2 was solved in about 50 clicks by building little;
+  tuned slice 1 was still not fun; all three had too much text. The
+  diagnosis is that the market as the puzzle punishes growth. It and a
+  proposal are in `docs/reviews/2026-10-04-round-1-playtest.md`, which
+  waits as Q11. This design's core is therefore not proven; what follows
+  is kept as the record of what was built.
 - **Toy 1 "Hubs" is built** (`toy.html`). The hub price rule reads on the
   map and in each hub's typical day: overbuilding wind at a coastal hub
   turns it blue on windy nights, and the hub panel says how much the
