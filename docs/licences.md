@@ -22,4 +22,5 @@ it is committed. Installed libraries are covered by the dependency approval in
 ## Register
 | Item | Source | Licence | Shipped or calibration-only | Attribution text | Added |
 |---|---|---|---|---|---|
+| Map of Western Denmark and site positions, `src/play/map.ts`, `src/game/sites.ts` | Drawn by the Phase 2 session from approximate coordinates (general knowledge of the coastline); no map data or image was copied or traced | Original to this repo | Shipped in the prototype; the vertical slice may replace it | — | 2026-10-04 |
 | Placeholder simulation inputs, `data/placeholder/*.json` | Invented, or approximated from general knowledge, by the Phase 1 session; no third-party dataset was copied or derived from | Original to this repo | Neither: development placeholders, to be replaced by licence-checked data in the Phase 1 task's part (b) | — | 2026-10-04 |
