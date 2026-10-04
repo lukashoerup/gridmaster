@@ -40,7 +40,8 @@ export const TECH_COLOR: Readonly<Record<TechId, string>> = {
 
 const PRICE_COLOR = '#1b1b1f';
 const DEMAND_COLOR = '#444';
-const GRID = { left: 56, right: 56, top: 36, bottom: 44 };
+// top leaves room for a one-line legend above the axis names.
+const GRID = { left: 56, right: 56, top: 60, bottom: 44 };
 
 /** Stacking order for generation: inflexible and cheap at the bottom. */
 const STACK_ORDER: readonly TechId[] = [
@@ -196,7 +197,7 @@ export function annualOption(series: SeriesByYear, zone: string, firstYear: numb
     animation: false,
     grid: GRID,
     tooltip: { trigger: 'axis' },
-    legend: { top: 0, textStyle: { fontSize: 11 } },
+    legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
     xAxis: { type: 'category', data: years.map(String), axisLabel: { interval: 4 } },
     yAxis: [
       { type: 'value', name: '€/MWh', axisLabel: { fontSize: 11 } },
@@ -228,7 +229,7 @@ export function captureOption(series: SeriesByYear, zone: string, firstYear: num
     animation: false,
     grid: GRID,
     tooltip: { trigger: 'axis', valueFormatter: (v) => (typeof v === 'number' ? `${fmt(v, 0)} %` : '–') },
-    legend: { top: 0, textStyle: { fontSize: 11 } },
+    legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
     xAxis: { type: 'category', data: years.map(String), axisLabel: { interval: 4 } },
     yAxis: { type: 'value', name: '% of mean price', min: 0, axisLabel: { fontSize: 11 } },
     series: [
@@ -272,14 +273,19 @@ export function ladderOption(p: ZoneYearPayload, hour: number): EChartsOption {
   const demand = p.demand[hour] ?? 0;
   const lo = Math.min(-5, ...blocks.map((b) => b.bid));
   const hi = Math.max(price, 10, ...blocks.filter((b) => b.x0 < served * 1.6 + 1).map((b) => b.bid)) * 1.15;
+  const floor = Math.floor(lo);
+  const xMax = Math.ceil(Math.max(served * 1.6, demand * 1.2, 1) / 500) * 500;
   const renderItem = (_params: CustomSeriesRenderItemParams, api: CustomSeriesRenderItemAPI): CustomSeriesRenderItemReturn => {
     const x0 = Number(api.value(0));
     const x1 = Number(api.value(1));
     const bid = Number(api.value(2));
     const dispatched = Number(api.value(4));
     const colorIndex = Number(api.value(3));
-    const start = api.coord([x0, Math.max(0, bid)]);
-    const end = api.coord([x1, Math.min(0, bid)]);
+    // Columns rise from the chart's floor to the offer price, so offers at or
+    // near zero (most wind and solar) stay visible instead of collapsing onto
+    // the zero line.
+    const start = api.coord([x0, bid]);
+    const end = api.coord([x1, floor]);
     const tech = TECHS[colorIndex] ?? 'coal';
     const sx = start[0] ?? 0;
     const sy = start[1] ?? 0;
@@ -318,8 +324,8 @@ export function ladderOption(p: ZoneYearPayload, hour: number): EChartsOption {
         return `${TECH_LABEL[tech]} (${kind})<br/>offer ${fmt(Number(v[2]), 1)} €/MWh · ${fmt(Number(v[1]) - Number(v[0]))} MW · ran ${fmt(Number(v[4]))} MW`;
       },
     },
-    xAxis: { type: 'value', name: 'MW offered, cheapest first', nameLocation: 'middle', nameGap: 26, max: Math.max(served * 1.6, demand * 1.2, 1), axisLabel: { fontSize: 11 } },
-    yAxis: { type: 'value', name: '€/MWh', min: Math.floor(lo), max: Math.ceil(hi), axisLabel: { fontSize: 11 } },
+    xAxis: { type: 'value', name: 'MW offered, cheapest first', nameLocation: 'middle', nameGap: 26, max: xMax, axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '€/MWh', min: floor, max: Math.ceil(hi), axisLabel: { fontSize: 11 } },
     series: [
       {
         type: 'custom',
@@ -365,7 +371,7 @@ export function cannibalOption(points: readonly CannibalPoint[], currentGw: numb
     animation: false,
     grid: GRID,
     tooltip: { trigger: 'axis' },
-    legend: { top: 0, textStyle: { fontSize: 11 } },
+    legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
     xAxis: { type: 'value', name: 'GW of solar added', nameLocation: 'middle', nameGap: 26, axisLabel: { fontSize: 11 } },
     yAxis: [
       { type: 'value', name: '€/MWh', axisLabel: { fontSize: 11 } },
