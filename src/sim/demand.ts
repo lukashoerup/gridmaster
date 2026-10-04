@@ -10,7 +10,7 @@
 import { dayOfWeek, daysInYear } from './calendar';
 import type { ZoneInput } from './inputs';
 import { interp } from './inputs';
-import { Rng } from './rng';
+import { Rng, hashString } from './rng';
 
 const STREAM_DEMAND = 7;
 
@@ -31,7 +31,8 @@ export function demandSeries(zone: ZoneInput, year: number, seed: number): Float
   const hours = days * 24;
   const out = new Float64Array(hours);
   const shape = zone.demandShape;
-  const rng = Rng.fromSeed(seed, year, STREAM_DEMAND, zone.id.length * 131 + (zone.id.codePointAt(0) ?? 0));
+  // The stream id hashes the whole zone id, so every zone has its own noise (DK1 ≠ DK2 ≠ SE1 …).
+  const rng = Rng.fromSeed(seed, year, STREAM_DEMAND, hashString(zone.id));
   const phi = 0.7;
   let latent = 0;
   for (let k = 0; k < 20; k++) latent = phi * latent + Math.sqrt(1 - phi * phi) * rng.gaussian();

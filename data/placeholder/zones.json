@@ -1,6 +1,7 @@
 {
   "status": "placeholder, unverified",
   "note": "Zone definitions for the Phase 1 market toy. Every number is an approximation from general knowledge, invented to make the simulation run, and is to be replaced by real data (Eurostat/Ember demand, ENTSO-E load shapes) in part (b) of the task. Dates: DK1 joined Nord Pool 1999-07-01; the German LPX opened 2000-06-15; Nord Pool 1996-01-01; the Spanish market 1998-01-01. Negative prices: Germany from autumn 2008, DK1 and NO from autumn 2009, Spain's date is a guess. Price floor/cap follow today's EPEX harmonised limits (-500/+3000), placeholder for earlier years. Hydro: inflowTwh is the reservoir inflow only (run-of-river output is separate, so reservoir inflow plus run-of-river is Norway's total hydro); waterValueRefFactor multiplies the reference price (trailing 30-day price of the linked zones; the cheapest thermal cost for Spain, which has no link); waterValueSlope sets how fast the water value rises as the reservoir falls below its monthly target.",
+  "years": [1995, 2025],
   "units": {
     "latitude": "degrees north",
     "priceFloor": "EUR/MWh",
@@ -8,7 +9,8 @@
     "regulatedPrice": "EUR/MWh by year",
     "demandTwh": "TWh by year",
     "reservoirTwh": "TWh",
-    "inflowTwh": "TWh by year"
+    "inflowTwh": "TWh by year",
+    "years": "first and last year the inputs cover; the simulation refuses years outside them"
   },
   "zones": [
     {

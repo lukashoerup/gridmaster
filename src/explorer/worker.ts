@@ -1,11 +1,19 @@
 /**
  * Web Worker: runs the simulation off the main thread so the page stays
- * responsive while a year (or thirty-one of them) is computed.
+ * responsive. Requests go through the shared scheduler, which keeps only the
+ * newest request of each kind and works one simulated year at a time, so a
+ * new choice is picked up within about one year's computation.
  */
-import { handle, type Request, type Response } from './protocol';
+import { Scheduler, type Request, type Response } from './protocol';
+
+const scheduler = new Scheduler(
+  (r: Response) => self.postMessage(r),
+  (fn) => setTimeout(fn, 0),
+);
 
 self.onmessage = (event: MessageEvent<Request>) => {
-  handle(event.data, (response: Response) => {
-    self.postMessage(response);
-  });
+  scheduler.submit(event.data);
 };
+
+const ready: Response = { kind: 'ready' };
+self.postMessage(ready);

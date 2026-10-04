@@ -7,16 +7,50 @@
  * merged merit order ("market splitting", as Nord Pool did): the merged price
  * holds for all zones in the group, net positions give the link flows, and
  * when a flow exceeds a link's capacity that link is fixed at its limit, the
- * group splits and the parts are cleared again. Uncongested zones therefore
- * share one price exactly; congested links separate prices.
+ * group splits and the parts are cleared again.
  *
- * A scarcity adder lifts every bid toward the price cap as spare capacity in
- * the group runs out: eff = bid + (cap − bid) × s³, with s rising from 0 at
- * the reserve margin to 1 when spare capacity is gone. The adder is applied
- * to the bids before clearing, so storage and hydro see it consistently.
+ * - **One price per coupled group.** Uncongested zones share one price
+ *   exactly. Offers are dispatched in the order of their own bids, and the
+ *   group's price is held inside the tightest limits of its zones: the
+ *   highest floor and the lowest cap. So while one zone still forbids
+ *   negative prices, a group it is coupled to prices at zero, not below;
+ *   a storage charge bidding below that floor does not buy.
+ * - **Fixed links carry their full capacity** whenever the importing side can
+ *   use it: to meet demand, to charge storage, or to pass it on to a
+ *   neighbour. Only when a whole group cannot absorb its fixed imports (its
+ *   firm demand plus every storage charge it could buy is smaller than the
+ *   imports) are those imports scaled down.
+ * - **Wrong-way repair.** A link fixed earlier can end up flowing from the
+ *   dearer zone to the cheaper one once later links are fixed. Such a link is
+ *   released and the clearing repeats, the largest mismatch first; a link may
+ *   be released up to `MAX_RELEASES` times, so the loop always ends and the
+ *   repair converges in the cases sequential fixing creates. `wrongWayLinks`
+ *   counts what is left (a diagnostic: zero in the stress worlds and in
+ *   20,000 fuzzed meshes with equal floors). The one known leftover needs
+ *   different floors: a group held at a higher floor (say 0) that passes
+ *   power on to a zone priced below it shows as wrong-way by price although
+ *   the power comes from offers below both prices.
+ * - **Scarcity.** A scarcity adder lifts every bid toward the zone's price cap
+ *   as spare capacity runs out: eff = bid + (cap − bid) × s³, with s rising
+ *   from 0 at the reserve margin (reserveFraction × the zone's own demand) to
+ *   1 when spare capacity is gone. s is computed per zone, once per hour and
+ *   before clearing, from the zone's own firm demand (exports are not firm)
+ *   and its spare capacity: its own offers minus its own demand, plus what
+ *   each link could bring in from the neighbour's own spare (up to the link's
+ *   capacity). Because the lifted bids do not depend on how the zones end up
+ *   grouped, a coupled group and its split parts price consistently, and an
+ *   exporter is never lifted above the zone it exports to by its exports.
+ *   The adder is applied to the bids before clearing, so storage and hydro
+ *   see it consistently.
+ * - **Empty zones.** A group with no offers and no demand forms no price; it
+ *   is reported at 0 €/MWh (inside its floor and cap), never at the cap.
+ *   Unserved energy is shared among a group's zones in proportion to their
+ *   demand (a design question for Lukas, see the Phase 1 task notes).
  *
- * Everything is preallocated and reused hour after hour; the engine owns no
- * state between hours apart from its buffers.
+ * Inputs are checked: non-finite or negative sizes, non-finite bids and
+ * demand, bad links and unknown zones throw a clear error rather than
+ * leaking NaN into prices. The engine is sized by the caller (`World` sizes
+ * it from the inputs); it owns no state between hours apart from its buffers.
  */
 
 export const TRANCHE = {
@@ -37,9 +71,22 @@ export interface LinkSpec {
 }
 
 const EPS_MW = 1e-6;
+/** Prices closer than this (€/MWh) count as equal for congestion and wrong-way checks. */
+const EPS_PRICE = 1e-6;
+/** How often one link may be released by the wrong-way repair within one hour. */
+const MAX_RELEASES = 3;
+/** Default buffer sizes per zone when the caller does not size the engine. */
+const DEFAULT_BLOCKS_PER_ZONE = 64;
+const DEFAULT_CHARGES_PER_ZONE = 8;
+
+function fail(msg: string): never {
+  throw new Error(`ClearingEngine: ${msg}`);
+}
 
 export class ClearingEngine {
   readonly nZones: number;
+  readonly maxBlocks: number;
+  readonly maxCharges: number;
 
   // Zone parameters for the hour, set by the caller before clear().
   readonly demand: Float64Array;
@@ -52,6 +99,7 @@ export class ClearingEngine {
   readonly bTech: Int32Array;
   readonly bTranche: Int32Array;
   readonly bBid: Float64Array;
+  /** Effective bid after the scarcity adder and the group's floor/cap, set by clear(). */
   readonly bEff: Float64Array;
   readonly bMw: Float64Array;
   readonly bDisp: Float64Array;
@@ -76,8 +124,13 @@ export class ClearingEngine {
   // Links.
   private links: readonly LinkSpec[] = [];
   flow: Float64Array = new Float64Array(0);
+  /** 1 where the clearing held the link at a fixed flow (its capacity, or less if the importer could not absorb it). */
   linkFixed: Uint8Array = new Uint8Array(0);
-  private repaired: Uint8Array = new Uint8Array(0);
+  /** 1 where the link was fixed and the prices on its two sides differ: the link separated the zones. */
+  congested: Uint8Array = new Uint8Array(0);
+  private releases: Uint8Array = new Uint8Array(0);
+  /** Direction of a fixed link: +1 from→to, −1 to→from. */
+  private fixedDir: Int8Array = new Int8Array(0);
 
   // Scratch.
   private readonly fixedExport: Float64Array;
@@ -94,10 +147,16 @@ export class ClearingEngine {
   private readonly subtree: Float64Array;
   private readonly order: number[] = [];
   private inTree: Uint8Array = new Uint8Array(0);
-  private readonly maxBlocks: number;
-  private readonly maxCharges: number;
 
-  constructor(nZones: number, maxBlocks = 512, maxCharges = 64) {
+  /**
+   * @param nZones number of zones
+   * @param maxBlocks most supply blocks in one hour (default 64 per zone)
+   * @param maxCharges most storage-charging blocks in one hour (default 8 per zone)
+   */
+  constructor(nZones: number, maxBlocks = nZones * DEFAULT_BLOCKS_PER_ZONE, maxCharges = nZones * DEFAULT_CHARGES_PER_ZONE) {
+    if (!Number.isInteger(nZones) || nZones <= 0) fail(`nZones must be a positive integer, got ${nZones}`);
+    if (!Number.isInteger(maxBlocks) || maxBlocks < 0) fail(`maxBlocks must be a non-negative integer, got ${maxBlocks}`);
+    if (!Number.isInteger(maxCharges) || maxCharges < 0) fail(`maxCharges must be a non-negative integer, got ${maxCharges}`);
     this.nZones = nZones;
     this.maxBlocks = maxBlocks;
     this.maxCharges = maxCharges;
@@ -133,14 +192,22 @@ export class ClearingEngine {
     this.subtree = new Float64Array(nZones);
   }
 
-  /** Links available this hour (zero-capacity links should be left out). */
+  /** Links available this hour: two different known zones and a finite capacity ≥ 0 (a closed link is best left out). */
   setLinks(links: readonly LinkSpec[]): void {
+    links.forEach((l, i) => {
+      if (!this.isZone(l.from)) fail(`link ${i}: unknown zone ${l.from}`);
+      if (!this.isZone(l.to)) fail(`link ${i}: unknown zone ${l.to}`);
+      if (l.from === l.to) fail(`link ${i} joins zone ${l.from} to itself`);
+      if (!(Number.isFinite(l.capacityMw) && l.capacityMw >= 0)) fail(`link ${i}: capacity must be finite and non-negative, got ${l.capacityMw}`);
+    });
     this.links = links;
     if (this.flow.length !== links.length) {
       this.flow = new Float64Array(links.length);
       this.linkFixed = new Uint8Array(links.length);
+      this.congested = new Uint8Array(links.length);
       this.inTree = new Uint8Array(links.length);
-      this.repaired = new Uint8Array(links.length);
+      this.releases = new Uint8Array(links.length);
+      this.fixedDir = new Int8Array(links.length);
     }
   }
 
@@ -159,10 +226,21 @@ export class ClearingEngine {
     this.nCharges = 0;
   }
 
-  /** Add a supply block. Bids are clamped into the zone's [floor, cap]. */
+  private isZone(z: number): boolean {
+    return Number.isInteger(z) && z >= 0 && z < this.nZones;
+  }
+
+  private checkZone(zone: number, what: string): void {
+    if (!this.isZone(zone)) fail(`${what}: unknown zone ${zone}`);
+  }
+
+  /** Add a supply block. Bids are clamped into the zone's [floor, cap]; blocks of (nearly) zero size are skipped. */
   addBlock(zone: number, tech: number, tranche: Tranche, bid: number, mw: number): void {
+    this.checkZone(zone, 'addBlock');
+    if (!Number.isFinite(bid)) fail(`addBlock: bid must be finite, got ${bid} (zone ${zone}, tech ${tech})`);
+    if (!(Number.isFinite(mw) && mw >= -EPS_MW)) fail(`addBlock: size must be finite and non-negative, got ${mw} MW (zone ${zone}, tech ${tech})`);
     if (!(mw > EPS_MW)) return;
-    if (this.nBlocks >= this.maxBlocks) throw new Error('too many supply blocks');
+    if (this.nBlocks >= this.maxBlocks) fail(`too many supply blocks (more than ${this.maxBlocks}); size the engine for the inputs`);
     const i = this.nBlocks++;
     const fl = this.floor[zone] ?? -Infinity;
     const cp = this.cap[zone] ?? Infinity;
@@ -176,8 +254,11 @@ export class ClearingEngine {
 
   /** Add a price-sensitive demand block (buys when the price is at or below `wtp`). */
   addCharge(zone: number, tech: number, wtp: number, mw: number): void {
+    this.checkZone(zone, 'addCharge');
+    if (!Number.isFinite(wtp)) fail(`addCharge: willingness to pay must be finite, got ${wtp} (zone ${zone}, tech ${tech})`);
+    if (!(Number.isFinite(mw) && mw >= -EPS_MW)) fail(`addCharge: size must be finite and non-negative, got ${mw} MW (zone ${zone}, tech ${tech})`);
     if (!(mw > EPS_MW)) return;
-    if (this.nCharges >= this.maxCharges) throw new Error('too many charge blocks');
+    if (this.nCharges >= this.maxCharges) fail(`too many charge blocks (more than ${this.maxCharges}); size the engine for the inputs`);
     const i = this.nCharges++;
     const fl = this.floor[zone] ?? -Infinity;
     const cp = this.cap[zone] ?? Infinity;
@@ -201,21 +282,95 @@ export class ClearingEngine {
     return r;
   }
 
+  private checkZoneInputs(): void {
+    for (let z = 0; z < this.nZones; z++) {
+      const d = this.demand[z] ?? NaN;
+      const fl = this.floor[z] ?? NaN;
+      const cp = this.cap[z] ?? NaN;
+      const rf = this.reserveFraction[z] ?? NaN;
+      if (!(Number.isFinite(d) && d >= 0)) fail(`zone ${z}: demand must be finite and non-negative, got ${d}`);
+      if (!(Number.isFinite(fl) && Number.isFinite(cp) && fl <= cp)) fail(`zone ${z}: floor and cap must be finite with floor ≤ cap, got ${fl} and ${cp}`);
+      if (!(Number.isFinite(rf) && rf >= 0 && rf <= 1)) fail(`zone ${z}: reserveFraction must be within 0..1, got ${rf}`);
+    }
+  }
+
+  /**
+   * Fixed links carry their full capacity in their direction; recomputed on
+   * every pass, so a scale-down in one pass does not outlive the grouping
+   * that caused it.
+   */
+  private applyFixedFlows(): void {
+    this.fixedExport.fill(0);
+    for (let l = 0; l < this.links.length; l++) {
+      if (!this.linkFixed[l]) continue;
+      const link = this.links[l];
+      if (link === undefined) continue;
+      const f = (this.fixedDir[l] ?? 1) * link.capacityMw;
+      this.flow[l] = f;
+      this.fixedExport[link.from] = (this.fixedExport[link.from] ?? 0) + f;
+      this.fixedExport[link.to] = (this.fixedExport[link.to] ?? 0) - f;
+    }
+  }
+
+  /**
+   * Scarcity per zone, once per hour and before any clearing, so a coupled
+   * group and its split parts see the same lifted bids. A zone's spare
+   * capacity is its own offers minus its own demand, plus what each of its
+   * links could bring in from the neighbour's own spare (up to the link's
+   * capacity). s rises from 0 at the reserve margin (reserveFraction × own
+   * demand) to 1 when no spare is left, and every bid in the zone is lifted
+   * to bid + (cap − bid) × s³.
+   */
+  private computeScarcity(): void {
+    const nz = this.nZones;
+    const own = this.genSum;
+    own.fill(0);
+    for (let i = 0; i < this.nBlocks; i++) {
+      const z = this.bZone[i] ?? 0;
+      own[z] = (own[z] ?? 0) + (this.bMw[i] ?? 0);
+    }
+    for (let z = 0; z < nz; z++) own[z] = (own[z] ?? 0) - (this.demand[z] ?? 0);
+    const spare = this.chargeSum;
+    for (let z = 0; z < nz; z++) spare[z] = own[z] ?? 0;
+    for (const l of this.links) {
+      spare[l.from] = (spare[l.from] ?? 0) + Math.min(l.capacityMw, Math.max(0, own[l.to] ?? 0));
+      spare[l.to] = (spare[l.to] ?? 0) + Math.min(l.capacityMw, Math.max(0, own[l.from] ?? 0));
+    }
+    for (let z = 0; z < nz; z++) {
+      const reserve = (this.reserveFraction[z] ?? 0) * (this.demand[z] ?? 0);
+      const sp = spare[z] ?? 0;
+      let s: number;
+      if (reserve > 0) s = Math.min(1, Math.max(0, (reserve - sp) / reserve));
+      else s = sp < 0 ? 1 : 0;
+      this.scarcity[z] = s;
+    }
+    const eff = this.bEff;
+    for (let i = 0; i < this.nBlocks; i++) {
+      const z = this.bZone[i] ?? 0;
+      const s = this.scarcity[z] ?? 0;
+      const bid = this.bBid[i] ?? 0;
+      eff[i] = bid + ((this.cap[z] ?? bid) - bid) * s * s * s;
+    }
+  }
+
   /** Clear the hour: merged merit orders per coupled group, flows, congestion splitting. */
   clear(): void {
+    this.checkZoneInputs();
+    this.computeScarcity();
     const nz = this.nZones;
     const nl = this.links.length;
     this.fixedExport.fill(0);
     this.flow.fill(0);
     this.linkFixed.fill(0);
+    this.congested.fill(0);
+    this.releases.fill(0);
+    this.fixedDir.fill(0);
     this.wrongWayLinks = 0;
 
-    this.repaired.fill(0);
-    // Each link can be fixed, released once (repair) and fixed again: at most
-    // 3·nl changes, each followed by a fresh clearing, so the final state is
-    // always a clearing consistent with the flows.
-    const maxChanges = 3 * nl;
-    for (let changes = 0; ; ) {
+    // A link is fixed at most MAX_RELEASES + 1 times and released at most
+    // MAX_RELEASES times, so the loop ends; every pass ends with a fresh
+    // clearing, so the final state is a clearing consistent with the flows.
+    for (;;) {
       // Connected components over free links.
       for (let z = 0; z < nz; z++) this.uf[z] = z;
       for (let l = 0; l < nl; l++) {
@@ -228,41 +383,8 @@ export class ClearingEngine {
       }
       for (let z = 0; z < nz; z++) this.groupOf[z] = this.find(z);
 
-      // A group whose fixed imports exceed its demand cannot absorb them:
-      // scale those imports down (the importer, not the link, is the limit).
-      for (let r = 0; r < nz; r++) {
-        if (this.groupOf[r] !== r) continue;
-        let dG = 0;
-        for (let z = 0; z < nz; z++) if (this.groupOf[z] === r) dG += (this.demand[z] ?? 0) + (this.fixedExport[z] ?? 0);
-        if (dG >= -EPS_MW) continue;
-        let imports = 0;
-        for (let l = 0; l < nl; l++) {
-          if (!this.linkFixed[l]) continue;
-          const link = this.links[l];
-          if (link === undefined) continue;
-          const f = this.flow[l] ?? 0;
-          if (f > 0 && this.groupOf[link.to] === r && this.groupOf[link.from] !== r) imports += f;
-          else if (f < 0 && this.groupOf[link.from] === r && this.groupOf[link.to] !== r) imports -= f;
-        }
-        if (imports <= 0) continue;
-        const scale = Math.max(0, (imports + dG) / imports);
-        for (let l = 0; l < nl; l++) {
-          if (!this.linkFixed[l]) continue;
-          const link = this.links[l];
-          if (link === undefined) continue;
-          const f = this.flow[l] ?? 0;
-          const intoGroup =
-            (f > 0 && this.groupOf[link.to] === r && this.groupOf[link.from] !== r) ||
-            (f < 0 && this.groupOf[link.from] === r && this.groupOf[link.to] !== r);
-          if (!intoGroup) continue;
-          const exporter = f > 0 ? link.from : link.to;
-          const importer = f > 0 ? link.to : link.from;
-          const cut = Math.abs(f) * (1 - scale);
-          this.fixedExport[exporter] = (this.fixedExport[exporter] ?? 0) - cut;
-          this.fixedExport[importer] = (this.fixedExport[importer] ?? 0) + cut;
-          this.flow[l] = f * scale;
-        }
-      }
+      this.applyFixedFlows();
+      this.scaleDownUnabsorbableImports();
 
       // Clear each group.
       for (let z = 0; z < nz; z++) if (this.groupOf[z] === z) this.clearGroup(z);
@@ -284,9 +406,11 @@ export class ClearingEngine {
       }
       if (nl === 0) break;
       this.solveFreeFlows();
-      if (changes >= maxChanges) break;
 
-      // Most violated free link.
+      // Most violated free link: fix it at its full capacity, in the direction
+      // it wanted to flow. The importer's group absorbs it (meeting demand,
+      // charging storage or passing it on); a group that cannot is scaled
+      // down above.
       let worst = -1;
       let worstRatio = 1 + 1e-9;
       for (let l = 0; l < nl; l++) {
@@ -300,46 +424,32 @@ export class ClearingEngine {
         }
       }
       if (worst >= 0) {
-        // Fix it at its limit, in the direction it wanted to flow.
-        const link = this.links[worst];
-        if (link === undefined) break;
-        const dir = (this.flow[worst] ?? 0) >= 0 ? 1 : -1;
-        const exporter = dir > 0 ? link.from : link.to;
-        const importer = dir > 0 ? link.to : link.from;
-        let f = link.capacityMw;
-        const importerRoom = (this.demand[importer] ?? 0) + (this.fixedExport[importer] ?? 0);
-        if (f > importerRoom) f = Math.max(0, importerRoom);
-        this.fixedExport[exporter] = (this.fixedExport[exporter] ?? 0) + f;
-        this.fixedExport[importer] = (this.fixedExport[importer] ?? 0) - f;
-        this.flow[worst] = dir * f;
+        this.fixedDir[worst] = (this.flow[worst] ?? 0) >= 0 ? 1 : -1;
         this.linkFixed[worst] = 1;
-        changes++;
         continue;
       }
 
-      // Repair: a link fixed earlier may now flow from the dearer zone to the
-      // cheaper one (its flow was over-committed while another link was still
-      // free). Release it once and let the merged clearing find its flow.
-      let released = false;
-      for (let l = 0; l < nl && !released; l++) {
-        if (!this.linkFixed[l] || this.repaired[l]) continue;
+      // Wrong-way repair: release the fixed link with the largest price
+      // mismatch (exporter dearer than importer) and clear again.
+      let release = -1;
+      let releaseGap = EPS_PRICE;
+      for (let l = 0; l < nl; l++) {
+        if (!this.linkFixed[l] || (this.releases[l] ?? 0) >= MAX_RELEASES) continue;
         const link = this.links[l];
         if (link === undefined) continue;
         const f = this.flow[l] ?? 0;
-        if (f === 0) continue;
+        if (Math.abs(f) <= EPS_MW) continue;
         const exporter = f > 0 ? link.from : link.to;
         const importer = f > 0 ? link.to : link.from;
-        if ((this.price[exporter] ?? 0) > (this.price[importer] ?? 0) + 1e-6) {
-          this.fixedExport[exporter] = (this.fixedExport[exporter] ?? 0) - Math.abs(f);
-          this.fixedExport[importer] = (this.fixedExport[importer] ?? 0) + Math.abs(f);
-          this.flow[l] = 0;
-          this.linkFixed[l] = 0;
-          this.repaired[l] = 1;
-          released = true;
+        const gap = (this.price[exporter] ?? 0) - (this.price[importer] ?? 0);
+        if (gap > releaseGap) {
+          releaseGap = gap;
+          release = l;
         }
       }
-      if (!released) break;
-      changes++;
+      if (release < 0) break;
+      this.linkFixed[release] = 0;
+      this.releases[release] = (this.releases[release] ?? 0) + 1;
     }
 
     // Net positions include every link now; diagnostics on fixed links.
@@ -350,10 +460,67 @@ export class ClearingEngine {
       const f = this.flow[l] ?? 0;
       this.netPosition[link.from] = (this.netPosition[link.from] ?? 0) + f;
       this.netPosition[link.to] = (this.netPosition[link.to] ?? 0) - f;
-      if (this.linkFixed[l] && f !== 0) {
+      if (!this.linkFixed[l]) continue;
+      const pFrom = this.price[link.from] ?? 0;
+      const pTo = this.price[link.to] ?? 0;
+      if (Math.abs(pFrom - pTo) > EPS_PRICE) this.congested[l] = 1;
+      if (Math.abs(f) > EPS_MW) {
+        const pExp = f > 0 ? pFrom : pTo;
+        const pImp = f > 0 ? pTo : pFrom;
+        if (pExp > pImp + EPS_PRICE) this.wrongWayLinks++;
+      }
+    }
+  }
+
+  /**
+   * A group whose fixed imports exceed everything it can take (its firm
+   * demand, its fixed exports and every storage charge it could buy) cannot
+   * absorb them: scale those imports down (the importer, not the link, is the
+   * limit). Transit and storage charging count, so a link feeding a zone that
+   * passes power on or charges storage keeps its full capacity.
+   */
+  private scaleDownUnabsorbableImports(): void {
+    const nz = this.nZones;
+    const nl = this.links.length;
+    for (let r = 0; r < nz; r++) {
+      if (this.groupOf[r] !== r) continue;
+      let dG = 0;
+      let floorG = -Infinity;
+      for (let z = 0; z < nz; z++) {
+        if (this.groupOf[z] !== r) continue;
+        dG += (this.demand[z] ?? 0) + (this.fixedExport[z] ?? 0);
+        floorG = Math.max(floorG, this.floor[z] ?? -Infinity);
+      }
+      for (let i = 0; i < this.nCharges; i++) {
+        if (this.groupOf[this.cZone[i] ?? 0] === r && (this.cWtp[i] ?? 0) >= floorG) dG += this.cMw[i] ?? 0;
+      }
+      if (dG >= -EPS_MW) continue;
+      let imports = 0;
+      for (let l = 0; l < nl; l++) {
+        if (!this.linkFixed[l]) continue;
+        const link = this.links[l];
+        if (link === undefined) continue;
+        const f = this.flow[l] ?? 0;
+        if (f > 0 && this.groupOf[link.to] === r && this.groupOf[link.from] !== r) imports += f;
+        else if (f < 0 && this.groupOf[link.from] === r && this.groupOf[link.to] !== r) imports -= f;
+      }
+      if (imports <= 0) continue;
+      const scale = Math.max(0, (imports + dG) / imports);
+      for (let l = 0; l < nl; l++) {
+        if (!this.linkFixed[l]) continue;
+        const link = this.links[l];
+        if (link === undefined) continue;
+        const f = this.flow[l] ?? 0;
+        const intoGroup =
+          (f > 0 && this.groupOf[link.to] === r && this.groupOf[link.from] !== r) ||
+          (f < 0 && this.groupOf[link.from] === r && this.groupOf[link.to] !== r);
+        if (!intoGroup) continue;
         const exporter = f > 0 ? link.from : link.to;
         const importer = f > 0 ? link.to : link.from;
-        if ((this.price[exporter] ?? 0) > (this.price[importer] ?? 0) + 1e-6) this.wrongWayLinks++;
+        const cut = Math.abs(f) * (1 - scale);
+        this.fixedExport[exporter] = (this.fixedExport[exporter] ?? 0) - cut;
+        this.fixedExport[importer] = (this.fixedExport[importer] ?? 0) + cut;
+        this.flow[l] = f * scale;
       }
     }
   }
@@ -365,41 +532,35 @@ export class ClearingEngine {
     const charges = this.sortedCharges;
     blocks.length = 0;
     charges.length = 0;
+    // Firm demand to clear: own demand plus fixed exports minus fixed imports.
+    // It may be negative when fixed imports exceed the group's own demand;
+    // storage charging then absorbs the rest (guaranteed by the scale-down).
     let dFirm = 0;
-    let totalMw = 0;
-    let rfMax = 0;
     let capG = Infinity;
+    let floorG = -Infinity;
     for (let z = 0; z < nz; z++) {
       if (this.groupOf[z] !== root) continue;
-      // A zone's adjusted demand may be negative inside a group (it passes
-      // fixed imports on to a neighbour); the group total is what clears.
       dFirm += (this.demand[z] ?? 0) + (this.fixedExport[z] ?? 0);
-      rfMax = Math.max(rfMax, this.reserveFraction[z] ?? 0);
       capG = Math.min(capG, this.cap[z] ?? Infinity);
+      floorG = Math.max(floorG, this.floor[z] ?? -Infinity);
     }
+    let chargeMw = 0;
     for (let i = 0; i < this.nBlocks; i++) {
       if (this.groupOf[this.bZone[i] ?? 0] !== root) continue;
       blocks.push(i);
-      totalMw += this.bMw[i] ?? 0;
     }
     for (let i = 0; i < this.nCharges; i++) {
       if (this.groupOf[this.cZone[i] ?? 0] !== root) continue;
+      this.cDisp[i] = 0;
+      // A charge bidding below the group's floor never sees its price.
+      if ((this.cWtp[i] ?? 0) < floorG) continue;
       charges.push(i);
+      chargeMw += this.cMw[i] ?? 0;
     }
-    dFirm = Math.max(0, dFirm);
+    // Safety: never ask charges to absorb more than they can (the scale-down prevents it).
+    dFirm = Math.max(-chargeMw, dFirm);
 
-    // Scarcity: lift bids toward the cap as spare capacity runs out.
-    const spare = totalMw - dFirm;
-    const reserve = rfMax * dFirm;
-    let s: number;
-    if (reserve > 0) s = Math.min(1, Math.max(0, (reserve - spare) / reserve));
-    else s = spare < 0 ? 1 : 0;
-    const s3 = s * s * s;
     const eff = this.bEff;
-    for (const i of blocks) {
-      const bid = this.bBid[i] ?? 0;
-      eff[i] = bid + (capG - bid) * s3;
-    }
     blocks.sort((a, b) => (eff[a] ?? 0) - (eff[b] ?? 0) || a - b);
     const wtp = this.cWtp;
     charges.sort((a, b) => (wtp[b] ?? 0) - (wtp[a] ?? 0) || a - b);
@@ -407,7 +568,6 @@ export class ClearingEngine {
     const nb = blocks.length;
     const nc = charges.length;
     for (const i of blocks) this.bDisp[i] = 0;
-    for (const c of charges) this.cDisp[c] = 0;
 
     let supplied = 0;
     let prevP = -Infinity;
@@ -483,20 +643,22 @@ export class ClearingEngine {
 
     if (!settled && nc > 0 && settleAtCharge(Infinity)) settled = true;
     if (!settled) {
-      priceG = capG;
       unservedG = Math.max(0, dFirm - supplied);
+      // Short of supply: the cap. Nothing short (no offers and no demand): no
+      // price forms; report 0 inside the group's limits rather than the cap.
+      priceG = unservedG > EPS_MW ? capG : Math.min(capG, Math.max(floorG, 0));
+      if (unservedG <= EPS_MW) unservedG = 0;
     }
 
     let positiveDemand = 0;
     for (let z = 0; z < nz; z++) {
       if (this.groupOf[z] === root) positiveDemand += Math.max(0, (this.demand[z] ?? 0) + (this.fixedExport[z] ?? 0));
     }
+    // One price for the group, inside the tightest floor and cap of its zones.
+    priceG = Math.min(capG, Math.max(floorG, priceG));
     for (let z = 0; z < nz; z++) {
       if (this.groupOf[z] !== root) continue;
-      const fl = this.floor[z] ?? -Infinity;
-      const cp = this.cap[z] ?? Infinity;
-      this.price[z] = Math.min(cp, Math.max(fl, priceG));
-      this.scarcity[z] = s;
+      this.price[z] = priceG;
       const dz = Math.max(0, (this.demand[z] ?? 0) + (this.fixedExport[z] ?? 0));
       this.unserved[z] = positiveDemand > 0 ? (unservedG * dz) / positiveDemand : 0;
     }

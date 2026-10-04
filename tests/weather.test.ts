@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { loadPlaceholderInputs } from '../src/data/placeholder';
-import { SyntheticWeather, demandSeries, hoursInYear } from '../src/sim';
+import { loadPlaceholderInputs, placeholderRaw } from '../src/data/placeholder';
+import { SyntheticWeather, demandSeries, hashString, hoursInYear, validateInputs } from '../src/sim';
+import { normaliseMean } from '../src/sim/weather';
 
 function dailyMeans(series: Float64Array): number[] {
   const days = series.length / 24;
@@ -178,6 +179,50 @@ describe('demand shape', () => {
       const peak = Math.max(...Array.from(d));
       expect(peak / (sum / d.length)).toBeGreaterThan(1.2);
       expect(peak / (sum / d.length)).toBeLessThan(1.7);
+    }
+  });
+});
+
+describe('stress-test findings: weather and demand streams', () => {
+  const inputs = loadPlaceholderInputs();
+
+  it('F5: demand noise hashes the whole zone id (DK1 ≠ DK2 ≠ DXX)', () => {
+    const dk1 = inputs.zones.find((z) => z.id === 'DK1');
+    if (dk1 === undefined) throw new Error('no DK1');
+    const a = demandSeries(dk1, 2015, 42);
+    expect(Array.from(demandSeries(dk1, 2015, 42))).toEqual(Array.from(a));
+    for (const id of ['DK2', 'DXX', 'NDK']) {
+      const b = demandSeries({ ...dk1, id }, 2015, 42);
+      expect(a.some((v, i) => v !== b[i]), id).toBe(true);
+    }
+    const ids = ['DK1', 'DK2', 'SE1', 'SE2', 'SE3', 'SE4', 'NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'DE', 'ES', 'NO'];
+    expect(new Set(ids.map(hashString)).size).toBe(ids.length);
+  });
+
+  it('F16: wind clipped at 0.98 still meets its target mean', () => {
+    // A peaky series: clipping at 0.98 would have cut the mean below target.
+    const s = Float64Array.from({ length: 1000 }, (_, i) => (i % 10 === 0 ? 5 : 0.2));
+    normaliseMean(s, 0.3, 0.98);
+    let sum = 0;
+    for (const v of s) {
+      expect(v).toBeLessThanOrEqual(0.98);
+      sum += v;
+    }
+    expect(sum / s.length).toBeCloseTo(0.3, 9);
+    // Without the year-to-year factor the realised capacity factor is exactly the configured one (was ~2 % low in DK1).
+    const raw = structuredClone(placeholderRaw) as unknown as { zones: { zones: { wind: { yearSigma: number } }[] } };
+    for (const z of raw.zones.zones) z.wind.yearSigma = 0;
+    const flat = validateInputs(raw as never);
+    const weather = new SyntheticWeather(flat);
+    for (const seed of [1, 42]) {
+      const wy = weather.year(seed, 2015);
+      for (const z of flat.zones) {
+        const w = wy.wind[z.id];
+        if (w === undefined) throw new Error('no wind');
+        let m = 0;
+        for (const v of w) m += v;
+        expect(m / w.length, `${z.id} seed ${seed}`).toBeCloseTo(z.wind.meanCf, 9);
+      }
     }
   });
 });

@@ -142,9 +142,9 @@ describe('the whole placeholder world', () => {
     let wrongWay = 0;
     for (let year = 1995; year <= 2025; year++) {
       const r = w.simulateYear(year);
-      // The splitting heuristic may leave a congested link flowing from the
-      // dearer zone in rare hours (a full LP would not); a handful a year is tolerated.
-      expect(r.wrongWayLinkHours, `${year} wrong-way link hours`).toBeLessThanOrEqual(10);
+      // The wrong-way repair leaves no congested link flowing from the dearer
+      // zone in the tested worlds; a couple of hours a year are tolerated.
+      expect(r.wrongWayLinkHours, `${year} wrong-way link hours`).toBeLessThanOrEqual(2);
       wrongWay += r.wrongWayLinkHours;
       for (const zid of r.zones) {
         const s = r.byZone[zid]?.stats;
@@ -155,7 +155,7 @@ describe('the whole placeholder world', () => {
         expect(s.unservedMwh, `${zid} ${year} unserved`).toBeLessThan(5000);
       }
     }
-    expect(wrongWay).toBeLessThanOrEqual(30);
+    expect(wrongWay).toBeLessThanOrEqual(5);
     // 2022 was the dearest year everywhere.
     for (const zid of ['DK1', 'DE', 'ES']) {
       const m = means[zid] ?? [];

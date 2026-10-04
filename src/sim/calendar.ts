@@ -23,6 +23,13 @@ export function hoursInYear(year: number): number {
 
 const CUMULATIVE_DAYS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
 
+/** Number of days in a month (1–12) of a year. */
+export function daysInMonth(year: number, month: number): number {
+  if (!Number.isInteger(month) || month < 1 || month > 12) throw new Error(`bad month ${month}`);
+  if (month === 2) return isLeapYear(year) ? 29 : 28;
+  return month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31;
+}
+
 /** 0-based day of year of a calendar date. */
 export function dayOfYear(date: DateYMD): number {
   const base = CUMULATIVE_DAYS[date.month - 1];
@@ -88,13 +95,43 @@ export function labelForHour(year: number, h: number): string {
   return `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:00`;
 }
 
-/** Parse "YYYY-MM-DD" (data files). Throws on anything else. */
+/** Parse "YYYY-MM-DD" (data files). Throws on anything else, including days a month does not have (1999-02-31). */
 export function parseDate(s: string): DateYMD {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (!m) throw new Error(`bad date "${s}" (expected YYYY-MM-DD)`);
   const year = Number(m[1]);
   const month = Number(m[2]);
   const day = Number(m[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) throw new Error(`bad date "${s}"`);
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) throw new Error(`bad date "${s}" (no such day)`);
   return { year, month, day };
+}
+
+/**
+ * Daily values from twelve monthly ones: each month's value is read as its
+ * mid-month value and the days in between are interpolated linearly
+ * (December wraps to January), so there is no step on the 1st of a month.
+ * Returns one value per day of `year`, taken at noon.
+ */
+export function dailyFromMonthly(monthly: readonly number[], year: number): Float64Array {
+  if (monthly.length !== 12) throw new Error('dailyFromMonthly needs 12 values');
+  const days = daysInYear(year);
+  const mids: number[] = [];
+  for (let m = 1; m <= 12; m++) mids.push(dayOfYear({ year, month: m, day: 1 }) + daysInMonth(year, m) / 2);
+  const out = new Float64Array(days);
+  for (let d = 0; d < days; d++) {
+    const t = d + 0.5;
+    let k = 0;
+    while (k < 12 && (mids[k] ?? Infinity) <= t) k++;
+    // Between the mid-points of month k−1 and month k (wrapping around the year).
+    const iA = (k + 11) % 12;
+    const iB = k % 12;
+    let tA = mids[iA] ?? 0;
+    let tB = mids[iB] ?? 0;
+    if (k === 0) tA -= days;
+    if (k === 12) tB += days;
+    const a = monthly[iA] ?? 0;
+    const b = monthly[iB] ?? 0;
+    out[d] = a + ((b - a) * (t - tA)) / (tB - tA);
+  }
+  return out;
 }

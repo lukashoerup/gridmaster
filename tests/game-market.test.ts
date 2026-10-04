@@ -102,7 +102,11 @@ describe('determinism', () => {
 
 describe('a whole chapter', () => {
   it('lets a bot play 1995–2025 with books that balance every year', () => {
-    const run = runHeadless(inputs, 42, leveragedWindBot());
+    // Whether this leveraged bot survives depends on the seed (on 2026-10-04 it
+    // went bankrupt for 2–3 of seeds 1, 7, 42, 99, 123, 2024, and which ones
+    // changed with the Phase 1 market fixes). Seed 99 reaches 2025 before and
+    // after them; a market change can still move it, so check the seed first.
+    const run = runHeadless(inputs, 99, leveragedWindBot());
     const s = run.state;
     expect(s.over?.kind).toBe('end');
     expect(s.reports.map((r) => r.year)).toEqual(Array.from({ length: 31 }, (_, i) => 1995 + i));

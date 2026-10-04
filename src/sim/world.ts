@@ -1,13 +1,33 @@
 /**
  * The world: inputs + weather source + seed, simulated one year at a time on
- * a fixed timestep of one hour. State that carries across years (reservoir
- * levels, storage state of charge, the rolling price windows storage uses)
- * lives here; `reset()` returns it to the starting point.
+ * a fixed timestep of one hour.
+ *
+ * **Contract.** A year's result is a pure function of four things: the
+ * inputs (including capacity added with `addCapacity`), the seed, the year
+ * and the starting state. The starting state is everything that carries
+ * across years: reservoir levels, the storage state of charge, and the
+ * recent-price windows that storage and the water value look back on. It is
+ * explicit and serialisable: `snapshot()` returns it as plain JSON-safe data
+ * and `restore(state)` loads it, so a game save stores the state of
+ * 1 January (or a replay starts from 1995: a fresh world simulating
+ * 1995, 1996, … in order reproduces the long run exactly). Calling
+ * `simulateYear` advances the state to the end of that year; simulating the
+ * same year twice on one world therefore starts from different states.
+ * `reset()` returns to the fresh starting state.
+ *
+ * **Seeds** are unsigned 32-bit integers (0…4294967295); anything else is
+ * rejected rather than silently wrapped. **Years** must be integers within
+ * the range the inputs cover (`WorldInputs.firstYear`…`lastYear`).
+ *
+ * **Storage** starts empty when it first appears (no free charge). Its
+ * energy capacity is set per year; if it shrinks, the stored energy above
+ * the new capacity is dropped at 1 January, and storage that disappears
+ * takes its charge with it.
  */
-import { hourFromDate, hoursInYear, monthOfDay } from './calendar';
+import { dailyFromMonthly, daysInYear, hourFromDate, hoursInYear } from './calendar';
 import { demandSeries } from './demand';
 import { Hasher } from './hash';
-import { TECHS, interp, type Keyframes, type TechId, type WorldInputs, type ZoneId } from './inputs';
+import { TECHS, annualPath, interp, type TechId, type TechKind, type WorldInputs, type ZoneId } from './inputs';
 import { ClearingEngine, TRANCHE, type LinkSpec } from './market';
 import { zoneStats, type ZoneStats } from './stats';
 import type { WeatherSource, WeatherYear } from './weather';
@@ -79,7 +99,10 @@ export interface LinkYear {
   readonly capacityMw: number;
   /** Flow MW, positive from `from` to `to`. */
   readonly flow: Float64Array;
-  /** 1 where the link was at its limit and separated the two zones' prices. */
+  /**
+   * 1 where the clearing held the link at a fixed flow (its capacity, or less
+   * when the importer could not absorb more) and the two zones' prices differ.
+   */
   readonly congested: Uint8Array;
   readonly congestedHours: number;
 }
@@ -93,6 +116,24 @@ export interface YearResult {
   readonly links: readonly LinkYear[];
   /** Diagnostic: hours × links where a congested link flowed from the dearer zone. */
   readonly wrongWayLinkHours: number;
+}
+
+/**
+ * Everything that carries from one year into the next, as plain JSON-safe
+ * data. Windows list their values oldest first. A zone missing from
+ * `reservoirMwh` starts at its reservoir's initial fill; storage missing
+ * from `storageMwh` starts empty.
+ */
+export interface WorldState {
+  readonly version: 1;
+  /** Reservoir content in MWh, per zone with a reservoir. */
+  readonly reservoirMwh: Readonly<Record<ZoneId, number>>;
+  /** Stored energy in MWh per storage plant, keyed `zone/tech` (e.g. `DE/pumped`). */
+  readonly storageMwh: Readonly<Record<string, number>>;
+  /** The last week of hourly prices per zone that storage sets its thresholds from. */
+  readonly storagePrices: Readonly<Record<ZoneId, readonly number[]>>;
+  /** The last month of linked zones' hourly prices per reservoir zone, the water value's anchor. */
+  readonly neighbourPrices: Readonly<Record<ZoneId, readonly number[]>>;
 }
 
 /** Rolling window of recent prices with cheap percentile lookup. */
@@ -110,7 +151,8 @@ class PriceWindow {
     return this.count;
   }
 
-  push(p: number): void {
+  push(price: number): void {
+    const p = price + 0; // −0 → 0, so saved and live windows match bit for bit
     if (this.count === this.size) {
       const old = this.ring[this.head] ?? 0;
       const idx = this.indexOf(old);
@@ -148,6 +190,19 @@ class PriceWindow {
     return this.sorted[idx] ?? 0;
   }
 
+  /** The window's values, oldest first. */
+  values(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < this.count; i++) out.push(this.ring[(this.head + i) % this.size] ?? 0);
+    return out;
+  }
+
+  /** Replace the contents with `values` (oldest first; only the newest `size` are kept). */
+  load(values: readonly number[]): void {
+    this.reset();
+    for (const v of values.slice(Math.max(0, values.length - this.size))) this.push(v);
+  }
+
   reset(): void {
     this.sorted.length = 0;
     this.head = 0;
@@ -155,12 +210,15 @@ class PriceWindow {
   }
 }
 
-/** Running mean over a fixed window of hours. */
+/**
+ * Mean over a fixed window of hours. The mean is summed afresh from the
+ * window's values, oldest first, so it depends only on what the window holds,
+ * not on how it got there (a restored window gives the identical mean).
+ */
 class RollingMean {
   private readonly ring: Float64Array;
   private head = 0;
   private count = 0;
-  private sum = 0;
 
   constructor(private readonly size: number) {
     this.ring = new Float64Array(size);
@@ -170,26 +228,40 @@ class RollingMean {
     return this.count;
   }
 
-  push(v: number): void {
+  push(value: number): void {
+    const v = value + 0; // −0 → 0
     if (this.count === this.size) {
-      this.sum -= this.ring[this.head] ?? 0;
       this.ring[this.head] = v;
       this.head = (this.head + 1) % this.size;
     } else {
       this.ring[(this.head + this.count) % this.size] = v;
       this.count++;
     }
-    this.sum += v;
   }
 
   mean(): number {
-    return this.count > 0 ? this.sum / this.count : 0;
+    if (this.count === 0) return 0;
+    let sum = 0;
+    for (let i = 0; i < this.count; i++) sum += this.ring[(this.head + i) % this.size] ?? 0;
+    return sum / this.count;
+  }
+
+  /** The window's values, oldest first. */
+  values(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < this.count; i++) out.push(this.ring[(this.head + i) % this.size] ?? 0);
+    return out;
+  }
+
+  /** Replace the contents with `values` (oldest first; only the newest `size` are kept). */
+  load(values: readonly number[]): void {
+    this.reset();
+    for (const v of values.slice(Math.max(0, values.length - this.size))) this.push(v);
   }
 
   reset(): void {
     this.head = 0;
     this.count = 0;
-    this.sum = 0;
   }
 }
 
@@ -206,21 +278,13 @@ const STORAGE_WARMUP_HOURS = 24;
 const STORAGE_MIN_SPREAD = 2;
 
 const TECH_INDEX = new Map<TechId, number>(TECHS.map((t, i) => [t, i]));
+const STORAGE_TECHS = ['pumped', 'battery'] as const;
 
-/**
- * An annual value for a month of the year: the year's value, blended towards
- * the previous year in January–February and the next in November–December,
- * so the annual mean is nearly preserved while New Year is not a step.
- */
-function blendAnnual(kf: Keyframes, year: number, month?: number): number {
-  const v = interp(kf, year);
-  if (month === undefined) return v;
-  if (month === 1) return 0.75 * v + 0.25 * interp(kf, year - 1);
-  if (month === 2) return 0.9 * v + 0.1 * interp(kf, year - 1);
-  if (month === 11) return 0.9 * v + 0.1 * interp(kf, year + 1);
-  if (month === 12) return 0.75 * v + 0.25 * interp(kf, year + 1);
-  return v;
-}
+/** Largest seed: seeds are unsigned 32-bit integers. */
+export const MAX_SEED = 4294967295;
+
+/** Largest capacity `addCapacity` accepts for one zone and technology (MW): 10 TW. */
+export const MAX_ADDED_MW = 1e7;
 
 /** Share of a thermal fleet and its efficiency relative to the technology average. */
 const THERMAL_TRANCHES: readonly (readonly [number, number])[] = [
@@ -228,6 +292,15 @@ const THERMAL_TRANCHES: readonly (readonly [number, number])[] = [
   [0.4, 1.0],
   [0.3, 1.15],
 ];
+
+/** Most supply blocks one technology offers per zone and hour (sizes the clearing engine). */
+const BLOCKS_PER_TECH: Readonly<Record<TechKind, number>> = {
+  thermal: 1 + THERMAL_TRANCHES.length, // must-run + tranches
+  hydro_ror: 1,
+  hydro_res: 4, // forced + three water-value tranches
+  storage: 1, // discharge (charging is a demand block)
+  variable: 2, // flexible + supported
+};
 
 export class World {
   readonly inputs: WorldInputs;
@@ -242,22 +315,54 @@ export class World {
   private readonly zoneIndex = new Map<ZoneId, number>();
 
   constructor(inputs: WorldInputs, weather: WeatherSource, seed: number) {
+    if (!Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) {
+      throw new Error(`seed must be an integer in 0…${MAX_SEED} (unsigned 32-bit), got ${seed}`);
+    }
     this.inputs = inputs;
     this.weather = weather;
-    this.seed = seed >>> 0;
+    this.seed = seed;
     inputs.zones.forEach((z, i) => this.zoneIndex.set(z.id, i));
-    this.engine = new ClearingEngine(inputs.zones.length);
+    // Size the engine from the inputs: any zone may hold any technology (additions included).
+    let blocksPerZone = 0;
+    let chargesPerZone = 0;
+    for (const t of inputs.technologies.values()) {
+      blocksPerZone += BLOCKS_PER_TECH[t.kind];
+      if (t.kind === 'storage') chargesPerZone++;
+    }
+    const nz = inputs.zones.length;
+    this.engine = new ClearingEngine(nz, nz * blocksPerZone, nz * chargesPerZone);
     for (const z of inputs.zones) {
       this.windows.set(z.id, new PriceWindow(STORAGE_WINDOW_HOURS));
       this.neighbourPrice.set(z.id, new RollingMean(WATER_VALUE_WINDOW_HOURS));
     }
   }
 
-  /** Extra capacity on top of the data: the hook for the player's assets and the explorer's slider. */
-  addCapacity(zone: ZoneId, tech: TechId, mw: number, fromYear = -Infinity): void {
-    if (!this.zoneIndex.has(zone)) throw new Error(`unknown zone ${zone}`);
+  /**
+   * Extra capacity on top of the data, from `fromYear` on (default: the first
+   * year of the inputs): the hook for the player's assets and the explorer's
+   * slider. Rejected: unknown zones or technologies; sizes that are negative,
+   * not finite or that would take the zone's additions of that technology
+   * above `MAX_ADDED_MW`; a `fromYear` that is not an integer in the inputs'
+   * range; reservoir hydro in a zone without a reservoir; run-of-river in a
+   * zone with no run-of-river profile (neither an inflow series from a
+   * reservoir nor run-of-river plant of its own to follow).
+   */
+  addCapacity(zone: ZoneId, tech: TechId, mw: number, fromYear: number = this.inputs.firstYear): void {
+    const z = this.inputs.zones.find((x) => x.id === zone);
+    if (z === undefined) throw new Error(`unknown zone ${zone}`);
     if (!TECH_INDEX.has(tech)) throw new Error(`unknown technology ${tech}`);
-    if (!(mw >= 0) || !Number.isFinite(mw)) throw new Error('capacity must be a finite non-negative number');
+    if (typeof mw !== 'number' || !Number.isFinite(mw) || mw < 0) throw new Error(`capacity must be a finite non-negative number of MW, got ${mw}`);
+    let already = 0;
+    for (const a of this.additions) if (a.zone === zone && a.tech === tech) already += a.mw;
+    if (already + mw > MAX_ADDED_MW) throw new Error(`capacity added to ${zone} ${tech} would exceed ${MAX_ADDED_MW} MW`);
+    const { firstYear, lastYear } = this.inputs;
+    if (!Number.isInteger(fromYear) || fromYear < firstYear || fromYear > lastYear) {
+      throw new Error(`fromYear must be an integer in ${firstYear}…${lastYear}, got ${fromYear}`);
+    }
+    if (tech === 'hydro_res' && z.hydro === null) throw new Error(`${zone} has no reservoir, so reservoir hydro cannot be added there`);
+    if (tech === 'hydro_ror' && z.hydro === null && !this.inputs.capacity.get(zone)?.has('hydro_ror')) {
+      throw new Error(`${zone} has no run-of-river profile (no inflow series and no run-of-river plant), so run-of-river cannot be added there`);
+    }
     this.additions.push({ zone, tech, mw, fromYear });
   }
 
@@ -269,12 +374,75 @@ export class World {
     return this.additions;
   }
 
-  /** Forget reservoir levels, storage charge and price history. */
+  /** Forget reservoir levels, storage charge and price history: back to the fresh starting state. */
   reset(): void {
     this.reservoir.clear();
     this.soc.clear();
     for (const w of this.windows.values()) w.reset();
     for (const m of this.neighbourPrice.values()) m.reset();
+  }
+
+  /** The state that carries into the next simulated year (see the contract above). */
+  snapshot(): WorldState {
+    const reservoirMwh: Record<ZoneId, number> = {};
+    for (const [z, v] of this.reservoir) reservoirMwh[z] = v;
+    const storageMwh: Record<string, number> = {};
+    for (const [k, v] of this.soc) storageMwh[k] = v;
+    const storagePrices: Record<ZoneId, number[]> = {};
+    for (const [z, w] of this.windows) storagePrices[z] = w.values();
+    const neighbourPrices: Record<ZoneId, number[]> = {};
+    for (const [z, m] of this.neighbourPrice) neighbourPrices[z] = m.values();
+    return { version: 1, reservoirMwh, storageMwh, storagePrices, neighbourPrices };
+  }
+
+  /** Load a state saved with `snapshot()` (from this world or another with the same zones). */
+  restore(state: WorldState): void {
+    const bad = (msg: string): never => {
+      throw new Error(`restore: ${msg}`);
+    };
+    if (state.version !== 1) bad(`unknown state version ${String(state.version)}`);
+    const finite = (v: unknown, what: string): number => {
+      if (typeof v !== 'number' || !Number.isFinite(v)) bad(`${what} must be a finite number`);
+      return v as number;
+    };
+    const zone = (z: string, what: string): void => {
+      if (!this.zoneIndex.has(z)) bad(`${what}: unknown zone ${z}`);
+    };
+    const reservoir = new Map<ZoneId, number>();
+    for (const [z, v] of Object.entries(state.reservoirMwh)) {
+      zone(z, 'reservoirMwh');
+      const hydro = this.inputs.zones.find((x) => x.id === z)?.hydro ?? null;
+      if (hydro === null) bad(`reservoirMwh: zone ${z} has no reservoir`);
+      const mwh = finite(v, `reservoirMwh.${z}`);
+      if (mwh < 0 || mwh > (hydro?.reservoirTwh ?? 0) * 1e6 + 1e-6) bad(`reservoirMwh.${z} is outside the reservoir`);
+      reservoir.set(z, mwh);
+    }
+    const soc = new Map<string, number>();
+    for (const [k, v] of Object.entries(state.storageMwh)) {
+      const [z = '', t = '', ...rest] = k.split('/');
+      zone(z, 'storageMwh');
+      if (rest.length > 0 || !(STORAGE_TECHS as readonly string[]).includes(t)) bad(`storageMwh: bad key ${k}`);
+      const mwh = finite(v, `storageMwh.${k}`);
+      if (mwh < 0) bad(`storageMwh.${k} is negative`);
+      soc.set(k, mwh);
+    }
+    const loadWindows = (src: Readonly<Record<string, readonly number[]>>, what: string): Map<ZoneId, number[]> => {
+      const out = new Map<ZoneId, number[]>();
+      for (const [z, values] of Object.entries(src)) {
+        zone(z, what);
+        if (!Array.isArray(values)) bad(`${what}.${z} must be an array`);
+        out.set(z, values.map((v, i) => finite(v, `${what}.${z}[${i}]`)));
+      }
+      return out;
+    };
+    const storagePrices = loadWindows(state.storagePrices, 'storagePrices');
+    const neighbourPrices = loadWindows(state.neighbourPrices, 'neighbourPrices');
+    // Everything checked: apply.
+    this.reset();
+    for (const [z, v] of reservoir) this.reservoir.set(z, v);
+    for (const [k, v] of soc) this.soc.set(k, v);
+    for (const [z, values] of storagePrices) this.windows.get(z)?.load(values);
+    for (const [z, values] of neighbourPrices) this.neighbourPrice.get(z)?.load(values);
   }
 
   /** Installed capacity in MW of a technology in a zone for a year, including additions. */
@@ -286,20 +454,26 @@ export class World {
   }
 
   /**
-   * Marginal cost of a thermal technology (€/MWh electric) for a year, or for
-   * one month of it (1–12): annual fuel and carbon prices are blended with
-   * the neighbouring year's around New Year so costs do not step on 1 January.
+   * Marginal cost of a thermal technology (€/MWh electric) for a year, or at
+   * a point within it (`fraction` 0 = 1 January … 1 = 31 December): fuel and
+   * carbon follow `annualPath`, continuous across New Year and averaging to
+   * each year's input value; efficiency is read at the same point in time.
    */
-  marginalCost(tech: TechId, year: number, month?: number): number {
+  marginalCost(tech: TechId, year: number, fraction?: number): number {
     const t = this.inputs.technologies.get(tech);
     if (t === undefined || t.kind !== 'thermal' || t.fuel === null) return 0;
-    const fuel = blendAnnual(this.inputs.fuels.get(t.fuel) ?? [], year, month);
-    const co2 = blendAnnual(this.inputs.co2, year, month);
-    const eff = Math.max(0.05, interp(t.efficiency, year));
+    const fuelKf = this.inputs.fuels.get(t.fuel) ?? [];
+    const fuel = fraction === undefined ? interp(fuelKf, year) : annualPath(fuelKf, year, fraction);
+    const co2 = fraction === undefined ? interp(this.inputs.co2, year) : annualPath(this.inputs.co2, year, fraction);
+    // Fleet efficiency drifts linearly through the year (keyframe years read as mid-year), so it does not step either.
+    const eff = Math.max(0.05, interp(t.efficiency, fraction === undefined ? year : year + fraction - 0.5));
     return fuel / eff + (co2 * t.emissionFactor) / eff + t.variableOm;
   }
 
   simulateYear(year: number, options: SimulateOptions = {}): YearResult {
+    if (!Number.isInteger(year) || year < this.inputs.firstYear || year > this.inputs.lastYear) {
+      throw new Error(`year must be an integer in ${this.inputs.firstYear}…${this.inputs.lastYear} (the inputs' range), got ${year}`);
+    }
     const inputs = this.inputs;
     const zones = inputs.zones;
     const nz = zones.length;
@@ -308,15 +482,16 @@ export class World {
     if (weather.hours !== hours) throw new Error(`weather year has ${weather.hours} hours, expected ${hours}`);
     const engine = this.engine;
 
-    // Marginal costs by month: annual keyframes are interpolated through the
-    // year so fuel moves gradually rather than in a New Year step.
-    const mcByMonth: Map<TechId, number>[] = [];
-    const cheapestByMonth: number[] = [];
-    for (let m = 1; m <= 12; m++) {
+    // Marginal costs by day: fuel and carbon follow a continuous path through
+    // the annual values, so costs move gradually and do not step at New Year.
+    const days = daysInYear(year);
+    const mcByDay: Map<TechId, number>[] = [];
+    const cheapestByDay: number[] = [];
+    for (let d = 0; d < days; d++) {
       const mc = new Map<TechId, number>();
-      for (const t of TECHS) mc.set(t, this.marginalCost(t, year, m));
-      mcByMonth.push(mc);
-      cheapestByMonth.push(Math.max(3, Math.min(mc.get('coal') ?? Infinity, mc.get('gas_ccgt') ?? Infinity)));
+      for (const t of TECHS) mc.set(t, this.marginalCost(t, year, (d + 0.5) / days));
+      mcByDay.push(mc);
+      cheapestByDay.push(Math.max(3, Math.min(mc.get('coal') ?? Infinity, mc.get('gas_ccgt') ?? Infinity)));
     }
 
     const demand = zones.map((z) => demandSeries(z, year, this.seed));
@@ -373,6 +548,9 @@ export class World {
     zones.forEach((z, i) => {
       if (z.hydro !== null && !this.reservoir.has(z.id)) this.reservoir.set(z.id, z.hydro.initialFill * (hydroCapMwh[i] ?? 0));
     });
+    // Reservoir target fill per day: monthly targets read as mid-month values
+    // and interpolated, so the water value does not jump on the 1st.
+    const targetByDay = zones.map((z) => (z.hydro === null ? null : dailyFromMonthly(z.hydro.targetFill, year)));
     const resTech = inputs.technologies.get('hydro_res');
     const rorTech = inputs.technologies.get('hydro_ror');
     if (resTech === undefined || rorTech === undefined) throw new Error('hydro technologies missing');
@@ -387,16 +565,21 @@ export class World {
       rt: number;
       key: string;
     }
+    // New storage starts empty; if the energy capacity shrank since last year
+    // the energy above it is dropped, and storage that is gone loses its charge.
     const storage: StorageParams[][] = zones.map((z, zi) => {
       const list: StorageParams[] = [];
-      for (const t of ['pumped', 'battery'] as const) {
+      for (const t of STORAGE_TECHS) {
         const mw = capacity[zi]?.[t] ?? 0;
         const tech = inputs.technologies.get(t);
-        if (mw <= 0 || tech === undefined) continue;
-        const eta = Math.sqrt(tech.roundTripEfficiency);
         const key = `${z.id}/${t}`;
+        if (mw <= 0 || tech === undefined) {
+          this.soc.delete(key);
+          continue;
+        }
+        const eta = Math.sqrt(tech.roundTripEfficiency);
         const energyMwh = mw * tech.storageHours;
-        if (!this.soc.has(key)) this.soc.set(key, energyMwh / 2);
+        this.soc.set(key, Math.min(energyMwh, this.soc.get(key) ?? 0));
         list.push({ tech: t, powerMw: mw, energyMwh, etaC: eta, etaD: eta, rt: tech.roundTripEfficiency, key });
       }
       return list;
@@ -451,10 +634,9 @@ export class World {
 
     for (let h = 0; h < hours; h++) {
       const doy = Math.floor(h / 24);
-      const month = monthOfDay(year, doy);
       const winterness = (1 + Math.cos((2 * Math.PI * (doy - 15)) / 365.25)) / 2;
-      const mc = mcByMonth[month - 1] ?? new Map<TechId, number>();
-      const cheapestThermal = cheapestByMonth[month - 1] ?? 3;
+      const mc = mcByDay[doy] ?? new Map<TechId, number>();
+      const cheapestThermal = cheapestByDay[doy] ?? 3;
 
       engine.beginHour();
       for (let zi = 0; zi < nz; zi++) {
@@ -496,6 +678,7 @@ export class World {
               break;
             }
             case 'hydro_ror': {
+              // Follows the zone's inflow where it has a reservoir; flat at its mean capacity factor otherwise.
               const f = weather.inflow[z.id]?.[h] ?? 1;
               engine.addBlock(zi, ti, TRANCHE.MUST_RUN, tech.bid, Math.min(mw, mw * tech.meanCf * f));
               break;
@@ -511,7 +694,7 @@ export class World {
               const availFromLevel = Math.max(0, level + inflow - (hydroMinMwh[zi] ?? 0));
               const avail = Math.min(genCap, availFromLevel);
               const fill = capMwh > 0 ? level / capMwh : 0;
-              const target = z.hydro.targetFill[month - 1] ?? 0.5;
+              const target = targetByDay[zi]?.[doy] ?? 0.5;
               // Water is worth what it would fetch: the recent price of the linked
               // zones, or the cheapest thermal cost where there is no link yet.
               const anchor = this.neighbourPrice.get(z.id);
@@ -520,10 +703,8 @@ export class World {
                 hasNeighbours && anchor !== undefined && anchor.length >= WATER_VALUE_WARMUP_HOURS ? anchor.mean() : cheapestThermal;
               // Near a full reservoir water is about to be spilled, so its value collapses.
               const spillRisk = fill > 0.9 ? Math.max(0, (1 - fill) / 0.1) : 1;
-              const wv = Math.min(
-                z.priceCap,
-                Math.max(0, z.hydro.waterValueRefFactor * ref) * Math.exp(z.hydro.waterValueSlope * (target - fill)) * spillRisk,
-              );
+              const base = Math.max(0, z.hydro.waterValueRefFactor * ref) * spillRisk;
+              const wv = base > 0 ? Math.min(z.priceCap, base * Math.exp(Math.min(700, z.hydro.waterValueSlope * (target - fill)))) : 0;
               if (forced > 0) engine.addBlock(zi, ti, TRANCHE.HYDRO_FORCED, Math.max(floor, tech.bid), forced);
               const flexible = Math.max(0, avail - forced);
               if (flexible > 0) {
@@ -540,8 +721,12 @@ export class World {
               const soc = this.soc.get(sp.key) ?? 0;
               const p25 = history.percentile(0.25);
               const p75 = history.percentile(0.75);
-              const dischargeBid = Math.max(p75, (p25 + STORAGE_MIN_SPREAD) / sp.rt);
-              const chargeWtp = Math.min(p25, p75 * sp.rt - STORAGE_MIN_SPREAD);
+              // Buy below the window's 25th percentile, sell above its 75th, and
+              // never both in one hour: the sell bid stays at least the minimum
+              // spread above the buy bid at every price level (at deeply negative
+              // prices (p25 + spread) / rt alone would fall below p25).
+              const chargeWtp = Math.min(z.priceCap, Math.max(floor, Math.min(p25, p75 * sp.rt - STORAGE_MIN_SPREAD)));
+              const dischargeBid = Math.max(p75, (p25 + STORAGE_MIN_SPREAD) / sp.rt, chargeWtp + STORAGE_MIN_SPREAD);
               const discharge = Math.min(sp.powerMw, soc * sp.etaD);
               if (discharge > 0) engine.addBlock(zi, ti, TRANCHE.STORAGE, dischargeBid, discharge);
               const charge = Math.min(sp.powerMw, (sp.energyMwh - soc) / sp.etaC);
@@ -600,7 +785,7 @@ export class World {
         const arr = flows[l];
         if (arr !== undefined) arr[h] = engine.flow[l] ?? 0;
         const c = congested[l];
-        if (c !== undefined) c[h] = engine.linkFixed[l] ?? 0;
+        if (c !== undefined) c[h] = engine.congested[l] ?? 0;
       }
 
       // State updates.
@@ -631,7 +816,9 @@ export class World {
           if (inf !== null && inf !== undefined) inf[h] = inflow;
           if (sp !== null && sp !== undefined) sp[h] = spill;
         }
-        this.windows.get(z.id)?.push(price[zi]?.[h] ?? 0);
+        // Storage reads the computed market price, also before the market opens
+        // (the regulated tariff is flat and would leave it idle).
+        this.windows.get(z.id)?.push(marginalPrice[zi]?.[h] ?? 0);
         const nw = neighbourWeights[zi];
         if (z.hydro !== null && nw !== undefined && nw.length > 0) {
           let sum = 0;
