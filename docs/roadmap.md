@@ -58,7 +58,9 @@ proven on one zone before Europe is built.
 
 ### Phase 3 — Vertical slice: would we show it to strangers?
 - **Build:** grow to 3–5 zones; the 1990–2010 chapters fully polished:
-  interface, tutorial, sound, rivals, events, interconnectors.
+  interface, tutorial, sound, rivals, events, interconnectors. The end goal
+  and how rivals compete wait on Q7
+  (`docs/reviews/2026-10-04-competition-and-goals.md`).
 - **Money decisions arise here** (each goes to Lukas first): commissioned
   capsule art, logo and trailer (AI-generated store art must be disclosed and
   draws reviews about AI instead of the game), licensed music; the $100 Steam

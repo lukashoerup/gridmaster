@@ -145,6 +145,28 @@ access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
 
+### Q7 — The end goal and the competition model (taste and scope; before Phase 3)
+Lukas, 2026-10-04: "should it not be a complete market? … a goal would be to
+take over the entire market, to make it fully renewable? Or what? I am quite
+uncertain as to how we should build the competitive aspect … As well as the
+progressive system." Analysis:
+`docs/reviews/2026-10-04-competition-and-goals.md`. Options:
+- **A. Lead the transition** (recommended). Be number one by company value
+  and renewable output against three named rivals that race the player for
+  sites, grid room and tenders. A competition-authority cap on any one
+  zone's share (anchored on the 2006 DONG/Elsam remedy) pushes growth
+  abroad. A rank ladder continues D14's levels. A fully renewable Europe is
+  the sandbox's shared goal; takeovers stay later (D9) and arrive first as
+  a scenario victory.
+- **B. Take over everything.** Buyouts as the main victory, Offworld-style.
+  Moves the stock market and takeovers into the first release (changes D9).
+- **C. Make it fully renewable.** A mission-first shared goal, CO2-style.
+  Shifts the vision's emphasis; history reaches about 70% wind and solar in
+  Denmark by 2024 without the player.
+
+Not needed for Phase 1 or the Phase 2 prototype, which are the same under
+every option; needed before the Phase 3 rivals are designed.
+
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are
 listed in `docs/roadmap.md`.
