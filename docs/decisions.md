@@ -6,6 +6,30 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D14 — The prototype gets a reward layer: the review's recommendation (Lukas, 2026-10-04)
+> "Go with your recommendation, including company levels and the rival."
+
+Answers Q6. From the fun and progression review
+(`docs/reviews/2026-10-04-fun-and-progression.md`), these go into the
+one-zone prototype design (`docs/design/one-zone-prototype.md`):
+- **P1** "called it" reveals and project scorecards (§4.12);
+- **P2** company levels the player earns: farm → co-op partner → developer
+  → utility (§4.9);
+- **P3** an offer deck, one optional offer every few minutes (§4.10);
+- **P4** one named rival, Nordhav, as the face of history's build-out, with
+  no decisions of its own (§4.11), replacing the design's "no rivals with
+  names";
+- **P7** jackpots, records and the player's footprint (§4.13);
+- **P9** restructuring the first time the company goes bust, game over the
+  second (§4.5);
+- **P10** reward measures in the playtest (§9).
+
+Deferred to after the first playtest, if testers report a dull middle or a
+flat ending: P5 (local support, a Horns Rev stake, turbine-model bets) and
+P8 (a hands-on December 2024 week). Not adopted now: P6 (an electric
+boiler, a warning pulled earlier). The pillars are unchanged; the numbers
+are tuning values for the bots and playtests to set.
+
 ### D13 — Sessions merge their own pull requests; Lukas tests and answers (Lukas, 2026-10-04)
 > "But do I have to merge the PRs? I would rather spend my time testing."
 > "And answering questions you ask me here."
@@ -107,7 +131,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
@@ -120,21 +144,6 @@ it in the environment's settings (cloud environment menu → Edit → Network
 access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
-
-### Q6 — Which fun-review proposals go into the prototype (taste; before the Phase 2 build)
-Lukas asked on 2026-10-04 whether the plan will be fun and rewarding enough.
-The review (`docs/reviews/2026-10-04-fun-and-progression.md`) finds the
-decision space strong and the reward side thin. Unlocks come by date, goals
-come only at the end, the middle is thin, five of the nine scripted events
-are setbacks, and the opposition has no face. It proposes P1–P10 for the
-prototype and L1–L4 for later. Every proposal except P10 (playtest measures,
-builder-level) changes what players see or feel, so each waits for Lukas.
-**Recommended:** P1 ("called it" reveals), P3 (offer deck), P7 (celebrations
-and footprint counters), P9 (restructuring instead of game over) and P10 now;
-P2 (company tiers), P4 (a named rival; changes design §10) and P6 (earlier
-warning, an electric boiler) if he likes them; P5 and P8 after the first
-playtest. Needed before the Phase 2 build starts. Phase 1 does not depend
-on it.
 
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are

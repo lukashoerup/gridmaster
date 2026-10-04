@@ -5,10 +5,12 @@ there enough satisfying progression steps? Is it rewarding enough? Please
 analyse it by comparing it to other successful games and review it. Suggest
 potential changes."
 
-**Status:** a review with proposals. Nothing here is decided. Under the
-contract, anything players will see or feel is Lukas's call, so every
-proposal except P10 waits for him as **Q6** in `docs/decisions.md`. The
-pillars (D6), the first-release scope (D9) and D10–D12 are not re-opened.
+**Status:** answered by Lukas the same day (**D14**): "Go with your
+recommendation, including company levels and the rival." P1, P2, P3, P4,
+P7, P9 and P10 are now in the prototype design. P5 and P8 wait for the first
+playtest, and P6 is not adopted now. L1–L4 remain proposals for later
+phases. The pillars (D6), the first-release scope (D9) and D10–D12 were not
+re-opened.
 
 **Read for it:** `docs/original-brief.md`, `docs/vision.md`,
 `docs/roadmap.md`, `docs/decisions.md`, `docs/design/one-zone-prototype.md`
@@ -338,9 +340,10 @@ their Steam reviews after 50+ hours (notes §6).
   P3, P7 and P10 first. They are cheap, only the offer deck is a new
   system, and they make the gate measure the right thing.
 
-## Open question for Lukas
+## Open question for Lukas (answered: D14)
 Recorded as **Q6** in `docs/decisions.md`: which proposals go into the
-prototype design before Phase 2 is built.
+prototype design before Phase 2 is built. Lukas took the recommendation
+below, with P2 and P4 included.
 
 **Recommendation:**
 - **Now:** P1, P3, P7, P9 and P10.
