@@ -6,6 +6,32 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+### D17 — Fun first; realism takes a back seat (Lukas, 2026-10-04)
+> "I think we should try and hold off a bit on the realism part. I want to
+> focus on making features/game design that is essentially more fun and
+> rewarding. My ideas were just examples, and not necessarily all of them
+> good. Just note that. Once again I think we should get inspired by what
+> works well in other similar games. Such as transport tycoon, Sid meiers
+> railroads, OpenTTD (although I do not particularly like that game), and
+> maybe aspects of games like factorio (although quite different), and
+> maybe RTS games that has some aspects of this in their games. It is just
+> so important that this is actually fun. It is alpha omega that it is fun,
+> rewarding and engaging. So we need a fun core, that we can built on top
+> of I think."
+
+- **Fun is the first test of every design choice.** Where realism and fun
+  conflict, fun wins. Realism is flavour and a source of ideas, not a
+  constraint. The vision's pillars are revisited once a fun core is proven
+  (`docs/design/fun-core.md` §6).
+- **His examples after playtest 1 were examples, not requirements:**
+  maintenance, automatic shutdown, economies of scale, area patterns.
+  Q8 ("running the company") is therefore not adopted now.
+  `docs/design/running-the-company.md` stays as an idea bank for layers on
+  top of a fun core.
+- **Inspiration:** Transport Tycoon, Sid Meier's Railroads!, OpenTTD (its
+  depth, not its fiddliness), Factorio, RTS games.
+- **Next:** a fun core, proposed as Q9.
+
 ### D16 — Build the Phase 2 prototype now, in parallel with Phase 1 (Lukas, 2026-10-04)
 > "I've decided to build the Phase 2 one-zone prototype (Western Denmark,
 > 1995–2025) now, in parallel, on top of the existing market simulation and
@@ -180,7 +206,7 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
 
@@ -193,6 +219,28 @@ it in the environment's settings (cloud environment menu → Edit → Network
 access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
+
+### Q9 — The fun core: build the "power network" toy? (taste; before any further prototype slice)
+Following D17, `docs/design/fun-core.md` compares what makes Transport
+Tycoon, Sid Meier's Railroads!, Factorio, RTS games and Mini Metro fun
+(eight principles), and scores slice 1 against them: it fails six of eight.
+It proposes a new core: **build a power network on a living map**.
+- Place turbines and panels on fogged resource spots.
+- Draw lines to towns. A town pays more the hungrier it is, and flooded
+  towns pay almost nothing.
+- Power flows visibly, and "+€" pops at the towns.
+- The problems are your own: congestion, flooding, the evening gap.
+- Towns you keep lit grow.
+- Nordhav races you for spots, and supply contracts and patents are
+  auctioned.
+- Each year, pick one of three bonuses.
+- Chapters of about 45 minutes with medals.
+
+**Recommended:** build it first as a small **toy** (one session, at most
+two: `toy.html`, `src/toy/`, nothing existing changed). Lukas and 2–3
+friends then play 15–20 minutes and answer: keep playing? most fun moment?
+when waiting? If it is fun, the prototype is rebuilt on it. If not, one
+iteration, then the claim-race toy (C). Alternatives are in the design's §4.
 
 No decision above costs money. The first money decisions (art, music, the
 Steam fee, accountant, Apple developer account) arise in Phase 3 and are

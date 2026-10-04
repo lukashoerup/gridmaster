@@ -50,8 +50,12 @@ proven on one zone before Europe is built.
   decision D16; built in slices on placeholder prices, switching to real
   data when Phase 1 part (b) lands. Slice 1 is playable (`play.html`): the
   farm, wind turbines on sites, fixed tariffs then the hourly market, money
-  and loans, speed controls, the annual report. Next: solar parks and the
-  "why?" breakdown (slice 2).
+  and loans, speed controls, the annual report. **Lukas's first playtest:
+  "not fun yet".** It is passive, the player waits for cash, and expensive
+  setups are out of reach (`docs/reviews/2026-10-04-playtest-1.md`). Then
+  **D17: fun first.** The next step is to find a fun core with a small toy
+  (`docs/design/fun-core.md`, Q9: "build a power network on a living map"),
+  then rebuild the prototype on it. Slice 2 and later wait.
 - **Build:** ugly but playable in a browser. One zone (Western
   Denmark, 1995–2025, about an hour — D10), the panel-to-market loop: a few panels
   and a first wind turbine under fixed tariffs, the hourly market from 1999,
