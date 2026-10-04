@@ -6,7 +6,12 @@ Model: opus — Opus builds everything (workbench `docs/roles.md`).
 **In progress.** Started 2026-10-04 by Lukas's decision D16: build the
 prototype now, in parallel with Phase 1, on the Phase 1 simulation core and
 its placeholder data. **Slice 1 done 2026-10-04** (playable; preview
-published); slices 2–5 next.
+published). **Playtest 1 (Lukas, 2026-10-04): "not fun yet".** It is
+passive, a cash-waiting loop, with no stats per asset after interest, no
+offshore and expensive setups out of reach
+(`docs/reviews/2026-10-04-playtest-1.md`). A redesign with a new slice order
+is proposed (`docs/design/running-the-company.md`, **Q8**). **Do not start
+slice 2 until Q8 is answered.**
 
 ## Goal
 Turn `docs/design/one-zone-prototype.md` (Western Denmark, 1995–2025,
@@ -155,3 +160,21 @@ repo dependency) drove the built page in Chromium: welcome card, a turbine
 at Thy and at Lemvig, ×10 through the annual reports 1995–2000 and the
 Nord Pool card, the finance and assets tabs, a reload that resumed on the
 same date; no page errors; no sideways scroll at 390 px; dark mode.
+
+### 2026-10-04 — playtest 1 and the measured slice 1 economy
+The stock `runHeadless` runner on placeholder data gives:
+
+| Bot | Seed | Last purchase | Result |
+|---|---|---|---|
+| Cautious wind | 42 | 2003 | €0.46m, no medal |
+| Cautious wind | 7 | 2003 | €0.49m, no medal |
+| Leveraged wind | 42 | 2025 | €29m, bronze |
+| Leveraged wind | 7 | 2006 | −€0.65m |
+
+The first 600 kW turbine nets about €53k a year after its loan, so the next
+one is about 5½ minutes away at ×1. Lukas's diagnosis, "waiting for cash",
+is the measured structure, not a feeling. The proposed redesign and its
+targets are in `docs/design/running-the-company.md` (§12): a decision at
+least once a minute, the cautious bot building in every era, and the
+defaults bot reaching bronze in most seeds.
+
