@@ -11,8 +11,9 @@ builds the same thing.
 and its explorer page run on placeholder inputs; real data and the calibration
 against published prices are next. The first playable slice of the one-zone
 prototype (Western Denmark, 1995–2025) is built on top of it: `play.html`.
-Round 1 of the fun core is testing cheap toys against it: "The board"
-(`board.html`), and slice 1 tuned for comparison (`play.html?tuned=1`).
+Round 1 of the fun core is testing cheap toys against it: "Hubs"
+(`toy.html`), "The board" (`board.html`), and slice 1 tuned for comparison
+(`play.html?tuned=1`).
 
 ## Where to look
 | If you want… | Open |
