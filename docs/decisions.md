@@ -268,9 +268,30 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17; Q9 is D20; Q10 is D19. Q5 (network access) matters again only when D18 is lifted. The reasons behind
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above; Q6 is D14; Q7 is D15; Q8 was set aside by D17; Q9 is D20; Q10 is D19. Q5 (network access) matters again only when D18 is lifted. Q11 is open: what follows round 1. The reasons behind
 each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
+
+### Q11 — Round 1 failed: what next? (plan; the most important open question)
+Lukas played all three of round 1's games on 2026-10-04: "This is not fun
+tbh. Non of the game types works." His words and a diagnosis are in
+`docs/reviews/2026-10-04-round-1-playtest.md`. In short:
+- the market punished building more, so restraint won;
+- choices did not show their consequences, either too random or fully
+  known;
+- there was nothing to build or grow;
+- there was too much text.
+
+**Recommendation:** flip the core from "beat the market" to "build the grid
+that keeps a growing region lit".
+- Plants and drawn power lines on a large real map.
+- Towns pay known contract prices and grow when kept lit.
+- The enemy is the visible gap between supply and demand (dusk, calm,
+  cold snaps), which batteries, backup and lines answer.
+- Shown, not told.
+
+Test it with one small visual toy before anything bigger. It would change
+vision pillars 2 and 4 and reshape D19's core, so it needs Lukas's "go".
 
 ### Q5 — Network access for verification and data (access; can wait)
 This session's environment blocked most websites (Steam, Copernicus, ENTSO-E,
