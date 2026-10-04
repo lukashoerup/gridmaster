@@ -234,7 +234,51 @@ access: a broader level, or Custom with the needed domains added); steps:
 https://code.claude.com/docs/en/cloud-environments#network-access.
 A new session starts with a fresh search budget.
 
-### Q9 — The fun core: build the "power network" toy? (taste; before any further prototype slice)
+### Q10 — Six questions from the critical review, and its changes to the toy (taste; before the toy is built)
+Lukas asked for an independent, critical second opinion before anything is
+built: `docs/reviews/2026-10-04-critical-review-of-fun-core.md`.
+
+**Its main findings:**
+- **The clock contradicts the money rule.** Hunger is hourly, but a chapter
+  runs at about a second a day, so the evening peak is a 40 ms flicker.
+- **The toy no longer tests the vision's own claim,** that cannibalisation
+  is fun.
+- **The toy tests five systems at once,** so a result cannot be attributed.
+- **A backbone at a fixed price is a dominant strategy.**
+- **"Lines to towns" is a grid owner's fantasy,** not a producer's.
+- **Playtest 1 measured a quarter of the design on a tuning cliff.** The
+  approved design fails about three of the eight principles, not six.
+
+**Its questions for Lukas (§6):**
+1. **Whose shoes?** A company that owns the wires and keeps towns lit, or
+   one that owns the power plants and sells into a market? The review
+   suggests the second, with lines as connections to substations whose local
+   price is the hunger meter.
+2. **How long** is one sitting? Should the 30-year story fit one evening, or
+   be a 3–4-hour campaign in chapters?
+3. **Act on what?** Today's weather (many small moves), or this year's plan
+   (fewer, bigger bets, then watch them pay off)?
+4. **"Fun, like a train game with turbines":** a win or a warning?
+5. **History** as deadlines you see coming, as surprises, or as scenery?
+6. **How rough** may the toy look and still be judged fairly?
+
+**Its changes to the toy, waiting for a yes:**
+- fix the clock (play on structure, a rolling hunger meter with a
+  worst-hour marker, one zoom-in day);
+- test with money switched off;
+- an endogenous or congesting backbone;
+- lines as substation connections;
+- keep one era escalator (1999) and a weather stream;
+- cut the auction, picks, medals, countdown, town growth and flags from toy
+  1, and freeze D14 until a pass;
+- write pass and fail criteria first, with an "obvious bot" and a
+  comparison against a tuned slice 1;
+- a paper test and a one-screen test before code;
+- a second micro-toy, F: the 24-hour price curve as the board.
+
+### Q9 — The fun core: build the "power network" toy? (taste; on hold for Q10)
+**On hold:** the critical review recommends reshaping the toy before it is
+built (Q10).
 Following D17, `docs/design/fun-core.md` compares what makes Transport
 Tycoon, Sid Meier's Railroads!, Factorio, RTS games and Mini Metro fun
 (eight principles), and scores slice 1 against them: it fails six of eight.
