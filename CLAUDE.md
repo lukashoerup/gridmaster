@@ -1,17 +1,20 @@
 # Gridmaster (working title)
 
-A renewable-energy tycoon game for PC, aiming for Steam. The player starts in
-the 1990s with a few solar panels somewhere in Europe and grows an energy
-company through wind, storage, hydro, nuclear and experimental technology,
-against real European geography, weather and electricity markets.
-Owner: Lukas (Copenhagen). He does not program: AI sessions build, CI judges,
-Lukas decides.
+A renewable-energy tycoon game for PC, aiming for Steam. The player starts in the
+1990s with a few solar panels somewhere in Europe and grows an energy company through
+wind, storage, hydro, nuclear and experimental technology, against real European
+geography, weather and markets. Owner: Lukas (Copenhagen). He does not program.
 
 ## Read first, every session
 1. `docs/roadmap.md` — which phase we are in, its gate, and what comes next.
 2. `docs/decisions.md` — what is decided (do not re-litigate) and what is open.
 3. Who builds with which model, and when Astra reviews:
    `lukashoerup/workbench` → `docs/roles.md`.
+
+## Commands (Node 22)
+- Install `npm ci` (`.npmrc` works around an npm 10 resolver bug) · Test `npx vitest run`
+  · Typecheck `npm run typecheck` · Build the explorer `npm run build` → `dist/`
+  (static; works from any folder) · Dev server `npm run dev` · Speed check `npm run bench`
 
 ## Contract (non-negotiable; inherited from the workbench)
 - Work on a branch, never directly on `main`. The bootstrap commit of
@@ -24,7 +27,8 @@ Lukas decides.
   updated + task file moved to `tasks/done/`. Commit per task (one revert).
 - Run tests before every commit; never commit on red tests. CI is the judge.
 - NEVER add a dependency — library, engine, service or dataset — without
-  Lukas's explicit approval, recorded in `docs/decisions.md`.
+  Lukas's explicit approval, recorded in `docs/decisions.md`. Approved (D7):
+  typescript, vite, vitest, echarts, fast-check — nothing else, not even `@types/*`.
 - Max 3 attempts on the same failing test → stop, write a note in the task
   file, move on.
 - **Licences before content.** Every dataset, image, font, sound or music file
@@ -35,6 +39,7 @@ Lukas decides.
   text) is recorded in `docs/licences.md` too; Steam requires disclosing it.
 - Decisions Lukas makes in chat are committed to `docs/decisions.md` in the
   same session — other sessions read the repo, not the chat.
+- `src/sim/` stays pure: no DOM, clock, `Math.random` or outside imports (`tests/boundary.test.ts`).
 
 ## Talking to Lukas (agreed 2026-07-26, workbench-wide)
 He does not program, so an update he cannot read is not an update.
@@ -46,6 +51,10 @@ taste (here: anything players will see or feel) — or when the plan changes.
 ## Layout
 | Path | What |
 |---|---|
+| `src/sim/` | The simulation core: PRNG, calendar, inputs, weather, demand, market clearing, world, stats. Pure. `src/data/` loads the data files into it. |
+| `src/explorer/` | The explorer page (Vite + ECharts, Web Worker); `index.html` at the root is its entry. |
+| `data/placeholder/` | Placeholder inputs, every file marked `placeholder, unverified`; real extracts replace them. |
+| `tests/` | Vitest: unit, property (fast-check), invariants, determinism, sanity, speed, boundary. |
 | `docs/original-brief.md` | Lukas's founding description, verbatim. Never edited. |
 | `docs/vision.md` | What the game is and is not: pillars, loops, eras. Approved (D6); pillar changes need Lukas. |
 | `docs/roadmap.md` | Phases, the gate that ends each one, the current phase. |
@@ -62,7 +71,7 @@ its raw notes are in `docs/research/research_notes/Renewable energy tycoon game 
 | Working on... | Read first |
 |---|---|
 | Mechanics, progression, balance | `docs/vision.md`, `docs/design/`, then the report's design sections |
-| Simulation: weather, demand, prices | notes → `data_and_modelling.md` |
+| Simulation: weather, demand, prices | `src/sim/market.ts` header, then notes → `data_and_modelling.md` |
 | Eras, tech tree, historical events | notes → `history_and_tech_timeline.md` |
 | Engine, architecture, Steam release | notes → `build_approach_and_steam.md` |
 | Audience, pricing, marketing | notes → `audience_and_steam_market.md` |

@@ -7,8 +7,9 @@ storage, hydro, nuclear and experimental technology, in electricity markets
 and weather that behave like the real thing — and push back when everyone
 builds the same thing.
 
-**Status:** Phase 1, the market simulation (October 2026). Research done and
-direction decided; no game code yet.
+**Status:** Phase 1, the market simulation (October 2026). The simulation core
+and an explorer page exist, running on placeholder inputs; real data and the
+calibration against published prices are next. No gameplay yet.
 
 ## Where to look
 | If you want… | Open |

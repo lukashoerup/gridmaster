@@ -3,8 +3,11 @@
 **Current phase: 1 — market toy.** Phase 0 closed 2026-10-04: research done,
 direction, technology, platforms and first-release scope decided (D6–D9 in
 `docs/decisions.md`). The Phase 2 prototype is already designed and approved
-(`docs/design/one-zone-prototype.md`, D10–D12). Next up: the Phase 1 task.
-Open: Q5 (network access), needed for real data and the verification pass.
+(`docs/design/one-zone-prototype.md`, D10–D12). Phase 1 status (2026-10-04):
+the simulation core and the explorer page exist on **placeholder inputs**
+(`tasks/2026-10-04-phase1-market-toy.md`); real weather, fleets and fuel
+prices, and the calibration against Energinet data, wait for Q5 (network
+access). The gate cannot be judged on placeholder data.
 
 ## The principle: find the fun before adding content
 Lukas's constraint (decision D5) is a realistic scope with no compromise on
