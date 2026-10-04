@@ -13,9 +13,10 @@ geography, weather and markets. Owner: Lukas (Copenhagen). He does not program.
 
 ## Commands (Node 22)
 - Install `npm ci` (`.npmrc` works around an npm 10 resolver bug) · Test `npx vitest run`
-  · Typecheck `npm run typecheck` · Build both pages `npm run build` → `dist/` (static;
-  works from any folder): `index.html` the explorer, `play.html` the prototype · Dev
-  server `npm run dev` (the prototype at `/play.html`) · Speed check `npm run bench`
+  · Typecheck `npm run typecheck` · Build every page `npm run build` → `dist/` (static;
+  works from any folder): `index.html` the explorer, `play.html` the prototype,
+  `toy.html` toy 1 "Hubs" (round 1 of the fun core) · Dev server `npm run dev`
+  (the prototype at `/play.html`, the toy at `/toy.html`) · Speed check `npm run bench`
 
 ## Contract (non-negotiable; inherited from the workbench)
 - Work on a branch, never directly on `main`. The bootstrap commit of
@@ -41,7 +42,8 @@ geography, weather and markets. Owner: Lukas (Copenhagen). He does not program.
 - Decisions Lukas makes in chat are committed to `docs/decisions.md` in the
   same session — other sessions read the repo, not the chat.
 - `src/sim/` stays pure: no DOM, clock, `Math.random` or outside imports (`tests/boundary.test.ts`).
-  So does `src/game/`, which may import only `src/sim` (`tests/game-boundary.test.ts`).
+  So does `src/game/`, which may import only `src/sim` (`tests/game-boundary.test.ts`),
+  and so do the toys' rules in `src/toy/rules/` (`tests/toy-boundary.test.ts`).
 
 ## Talking to Lukas (agreed 2026-07-26, workbench-wide)
 He does not program, so an update he cannot read is not an update.
@@ -57,6 +59,7 @@ taste (here: anything players will see or feel) — or when the plan changes.
 | `src/explorer/` | The explorer page (Vite + ECharts, Web Worker); `index.html` at the root is its entry. |
 | `src/game/` | The Phase 2 prototype's rules (D16): money in cents, sites, tariffs, loans, the annual report, saves, bots. Pure; runs headless. |
 | `src/play/` | The prototype's page (plain DOM and SVG, no ECharts); `play.html` at the root is its entry. |
+| `src/toy/` | Round 1, toy 1 "Hubs" (D20): `rules/` pure and headless (hub prices, the game, the session log, the obvious bot), `page/` the DOM; `toy.html` is its entry. |
 | `data/placeholder/` | Placeholder inputs, every file marked `placeholder, unverified`; real extracts replace them. |
 | `tests/` | Vitest: unit, property (fast-check), invariants, determinism, sanity, speed, boundary. |
 | `docs/original-brief.md` | Lukas's founding description, verbatim. Never edited. |
