@@ -79,7 +79,10 @@ export interface LinkYear {
   readonly capacityMw: number;
   /** Flow MW, positive from `from` to `to`. */
   readonly flow: Float64Array;
-  /** 1 where the link was at its limit and separated the two zones' prices. */
+  /**
+   * 1 where the clearing held the link at a fixed flow (its capacity, or less
+   * when the importer could not absorb more) and the two zones' prices differ.
+   */
   readonly congested: Uint8Array;
   readonly congestedHours: number;
 }
@@ -600,7 +603,7 @@ export class World {
         const arr = flows[l];
         if (arr !== undefined) arr[h] = engine.flow[l] ?? 0;
         const c = congested[l];
-        if (c !== undefined) c[h] = engine.linkFixed[l] ?? 0;
+        if (c !== undefined) c[h] = engine.congested[l] ?? 0;
       }
 
       // State updates.

@@ -181,3 +181,75 @@ describe('clearing properties', () => {
     );
   });
 });
+
+describe('meshed coupling with storage, reserve margins and mixed floors', () => {
+  const meshBlock = fc.record({
+    bid: fc.oneof(fc.constant(0), fc.constant(-0.5), fc.constant(10), fc.double({ min: -100, max: 500, noNaN: true, noDefaultInfinity: true })),
+    mw: fc.double({ min: 1, max: 3000, noNaN: true, noDefaultInfinity: true }),
+  });
+  const caseArb = fc.record({
+    stacks: fc.array(fc.array(meshBlock, { minLength: 0, maxLength: 5 }), { minLength: 4, maxLength: 4 }),
+    shares: fc.array(fc.double({ min: 0, max: 1.3, noNaN: true }), { minLength: 4, maxLength: 4 }),
+    caps: fc.array(fc.double({ min: 0, max: 2000, noNaN: true }), { minLength: 4, maxLength: 4 }),
+    charges: fc.array(fc.record({ wtp: fc.double({ min: -50, max: 300, noNaN: true }), mw: fc.double({ min: 1, max: 1500, noNaN: true }) }), { maxLength: 3 }),
+    floors: fc.array(fc.constantFrom(0, FLOOR), { minLength: 4, maxLength: 4 }),
+    reserve: fc.double({ min: 0, max: 0.3, noNaN: true }),
+  });
+  type Case = typeof caseArb extends fc.Arbitrary<infer T> ? T : never;
+
+  // A triangle (0–1–2) plus a spur (2–3).
+  function clearCase(c: Case, equalFloors: boolean): ClearingEngine {
+    const e = new ClearingEngine(4);
+    for (let z = 0; z < 4; z++) {
+      e.floor[z] = equalFloors ? FLOOR : (c.floors[z] ?? FLOOR);
+      e.cap[z] = CAP;
+      e.reserveFraction[z] = c.reserve;
+    }
+    e.setLinks([
+      { from: 0, to: 1, capacityMw: c.caps[0] ?? 0 },
+      { from: 1, to: 2, capacityMw: c.caps[1] ?? 0 },
+      { from: 0, to: 2, capacityMw: c.caps[2] ?? 0 },
+      { from: 2, to: 3, capacityMw: c.caps[3] ?? 0 },
+    ]);
+    e.beginHour();
+    c.stacks.forEach((blocks, z) => {
+      e.demand[z] = blocks.reduce((s, b) => s + b.mw, 0) * (c.shares[z] ?? 0);
+      load(e, z, blocks);
+    });
+    c.charges.forEach((ch, i) => e.addCharge(i % 4, 9, ch.wtp, ch.mw));
+    e.clear();
+    return e;
+  }
+
+  it('balances energy, respects limits and gives free links one price', () => {
+    fc.assert(
+      fc.property(caseArb, (c) => {
+        const e = clearCase(c, false);
+        for (let z = 0; z < 4; z++) {
+          let gen = 0;
+          for (let i = 0; i < e.nBlocks; i++) if (e.bZone[i] === z) gen += e.bDisp[i] ?? 0;
+          let charge = 0;
+          for (let i = 0; i < e.nCharges; i++) if (e.cZone[i] === z) charge += e.cDisp[i] ?? 0;
+          const balance = gen - charge - (e.netPosition[z] ?? 0) + (e.unserved[z] ?? 0) - (e.demand[z] ?? 0);
+          if (Math.abs(balance) > 1e-6) return false;
+          const p = e.price[z] ?? NaN;
+          if (!(p >= (e.floor[z] ?? 0) - 1e-9 && p <= CAP)) return false;
+        }
+        for (let l = 0; l < 4; l++) {
+          const link = e.link(l);
+          if (Math.abs(e.flow[l] ?? 0) > link.capacityMw + 1e-6) return false;
+          if (!e.linkFixed[l] && Math.abs((e.price[link.from] ?? 0) - (e.price[link.to] ?? 0)) > 1e-9) return false;
+        }
+        return true;
+      }),
+      { numRuns: 400 },
+    );
+  });
+
+  it('leaves no link flowing from the dearer zone when the floors are equal', () => {
+    fc.assert(
+      fc.property(caseArb, (c) => clearCase(c, true).wrongWayLinks === 0),
+      { numRuns: 400 },
+    );
+  });
+});

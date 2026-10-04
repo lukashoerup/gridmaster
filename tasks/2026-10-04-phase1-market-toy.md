@@ -124,11 +124,15 @@ support) and the rest at minus the support premium. Price floor 0 before the
 zone's negative-price date, −500 after; cap 3000. **Scarcity:** every bid is
 lifted by (cap − bid)·s³ where s rises from 0 at the reserve margin (12 % of
 demand) to 1 when spare capacity is gone; applied before clearing so storage
-sees it. **Coupling:** zones joined by links are cleared as one merged merit
+sees it. Since the tester fixes, s is per zone (own demand; own offers plus
+what the links can bring in from neighbours' spare), not per coupled group.
+**Coupling:** zones joined by links are cleared as one merged merit
 order (Nord Pool style market splitting): when a resulting flow exceeds a
-link, that link is fixed at its limit, the group splits and is re-cleared;
-a link fixed earlier that ends up flowing from the dearer zone is released
-once and re-solved. Uncongested zones therefore share one price exactly.
+link, that link is fixed at its full capacity, the group splits and is
+re-cleared; a link that ends up flowing from the dearer zone is released and
+re-solved (up to three times per link and hour). Uncongested zones therefore
+share one price exactly, held inside the highest floor and lowest cap of the
+group.
 **Water value:** ref × exp(4 × (monthly target fill − fill)), collapsing
 above 90 % fill; ref is the trailing 30-day capacity-weighted price of the
 linked zones (the cheapest thermal cost for Spain, which has no link), times
@@ -147,8 +151,8 @@ median 0.45–0.50 s over five runs in Node 22 on the session's container
 
 **Determinism.** `hashYearResult` (two FNV-1a streams over prices, dispatch,
 flows, storage, reservoir) is identical across runs and differs by seed;
-`tests/world.test.ts` holds a golden hash for seed 42, 2019
-(`18e65696d6daa883`) — recompute it on any intended model or data change.
+`tests/world.test.ts` holds a golden hash for seed 42, 2019 — recompute it
+on any intended model or data change; its history is in the test file.
 
 **Sanity checks on the placeholder world (seeds 42 and 7).**
 - DE midday sag in the 2020s: yes (2024 hour-of-day means fall from ~75 at
@@ -196,9 +200,10 @@ weather generator itself is a placeholder to be replaced, not calibrated.
 
 **Known gaps.** Germany has only DK1 and NO as neighbours (no FR, NL, PL,
 CZ, AT, CH), so its imports in scarce hours are understated and its
-surpluses overstated. No forced outages. The splitting heuristic can leave a
-congested link flowing from the dearer zone in rare hours (≤ 1 hour a year
-observed; a full LP would not). Must-run CHP has no heat storage or bypass.
+surpluses overstated. No forced outages. The splitting heuristic with its
+wrong-way repair is not a full LP: with different price floors in one group
+it can still show a link flowing from the dearer zone (none in the placeholder
+world). Must-run CHP has no heat storage or bypass.
 Hydro has one reservoir per zone. The explorer simulates the selected year on
 its own from standard starting levels (reservoir 62 %, storage half full)
 while the long-run charts replay 1995–2025 in sequence; the page says so.
@@ -220,3 +225,51 @@ for 2015–2024; a script computing annual mean, price-duration curve,
 capture rates and negative hours from them; then tuning of fleets, the
 scarcity curve, support premiums and water values until the shapes match,
 written up as a markdown report with charts.
+
+### 2026-10-04 — fixes after the three Phase 1 test reports
+
+Three testers reviewed parts (a) and (d) on `7cadbaa`: a stress tester
+(findings F1–F16), an energy-market analyst (B1–B11) and a browser QA pass
+(M1–M3, m1–m13, c1–c5). Their reports and scripts are in that session's
+scratchpad, not in the repo. Every fix below has a regression test built
+from the report's reproduction where there was one.
+
+**Market clearing (`src/sim/market.ts`).**
+- F1: the per-zone `importerRoom` cap is gone. A fixed link carries its full
+  capacity whenever the importer's group can use it (demand, storage
+  charging, transit); fixed links are re-applied at full capacity on every
+  pass, and only a group that cannot absorb its imports at all is scaled
+  down (a safety net that never triggered in 20,000 fuzzed meshes). Seed 42,
+  2019: congested link-hours below capacity 178 → 0.
+- F2: scarcity is computed per zone, once per hour, before clearing: own
+  demand (exports are not firm) against own offers plus what each link could
+  bring in from the neighbour's own spare. Because the lifted bids no longer
+  depend on the grouping, merged and split groups price consistently. The
+  repro prices the exporter at 10 (was 539). The wrong-way repair releases a
+  link up to three times per hour, largest mismatch first, instead of once.
+  Wrong-way link-hours: DE demand +20 % 2024, seeds 1/2: 101/68 → 0/0; all
+  demand +15 % 2022: 202/26 → 0/0; reserve 0.25 2022: 32/20 → 0/0; NO
+  reservoir 0 TWh 2010: 85 → 0; 1995–2025 seed 1: 26 → 0. Fuzz, 20,000
+  four-zone meshes with storage and reserve margins: 0 with equal floors.
+- F7: a group with no offers and no demand is priced at 0 (inside its
+  limits), not at the cap.
+- F13: a coupled group's price is held inside its highest floor and lowest
+  cap; offers are still dispatched by their own bids, and a charge bidding
+  below the group floor does not buy. Free links now always show one price
+  (old engine: 4,764 of 20,000 fuzzed cases with mixed floors did not). Known
+  leftover: with mixed floors, a group held at a floor of 0 that passes power
+  on to a zone priced below 0 shows as wrong-way by price (2 in 20,000 fuzzed
+  cases; impossible in the placeholder world, where only DE has the lower
+  floor).
+- F11: `addBlock`, `addCharge`, `setLinks` and the per-zone demand, floor,
+  cap and reserve inputs throw a clear error on NaN, infinities, negative
+  sizes, unknown zones and self-links.
+- F16 (part): `congested` (engine and `LinkYear`) is 1 only when the link is
+  fixed and the prices on its two sides differ.
+- Calibration impact: annual means 1995–2025 (seeds 42 and 1, all zones)
+  move by at most 0.11 €/MWh, except Norway's 2005 blackout year for seed 1
+  (884.8 → 885.5); negative-hour counts change by at most one hour; DE 2009
+  negative hours unchanged (19 and 34 for seeds 42/7).
+- Golden hash (seed 42, 2019): `18e65696d6daa883` → `f760731eca2d0449`, from
+  F1 alone (scarcity never binds in that year).
+

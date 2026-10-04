@@ -3,8 +3,8 @@
  * determinism, the capacity-addition hook and the market-era rules.
  */
 import { describe, expect, it } from 'vitest';
-import { loadPlaceholderInputs } from '../src/data/placeholder';
-import { SyntheticWeather, World, hashYearResult, hourOfYear, type YearResult } from '../src/sim';
+import { loadPlaceholderInputs, placeholderRaw } from '../src/data/placeholder';
+import { SyntheticWeather, World, hashYearResult, hourOfYear, validateInputs, type YearResult } from '../src/sim';
 
 const inputs = loadPlaceholderInputs();
 const weather = new SyntheticWeather(inputs);
@@ -244,8 +244,11 @@ describe('determinism', () => {
   });
 });
 
-/** Golden hash of seed 42, year 2019, fresh world. Recompute after any intended change to the model or the placeholder data. */
-const GOLDEN_HASH_2019_SEED_42 = '18e65696d6daa883';
+/**
+ * Golden hash of seed 42, year 2019, fresh world. Recompute after any intended change to the model or the placeholder data.
+ * History: 18e65696d6daa883 (first build); f760731eca2d0449 (2026-10-04, F1: fixed links no longer throttled to the importer's demand).
+ */
+const GOLDEN_HASH_2019_SEED_42 = 'f760731eca2d0449';
 
 describe('capacity additions', () => {
   it('adds capacity from a given year and affects the result', () => {
@@ -303,5 +306,45 @@ describe('market eras', () => {
     const r2007 = world(8).simulateYear(2007);
     expect(r2007.byZone['DE']?.stats.negativeHours).toBe(0);
     expect(r2007.byZone['DE']?.negativeFromHour).toBe(8760);
+  });
+});
+
+describe('stress-test findings in the placeholder world', () => {
+  function mutated(mutate: (raw: Record<string, unknown>) => void, seed: number): World {
+    const raw = structuredClone(placeholderRaw) as unknown as Record<string, unknown>;
+    mutate(raw);
+    const i = validateInputs(raw as never);
+    return new World(i, new SyntheticWeather(i), seed);
+  }
+
+  it('F1: a congested link carries its full capacity (was capped at the importer’s demand)', () => {
+    const r = world(42).simulateYear(2019);
+    let below = 0;
+    let congested = 0;
+    for (const l of r.links) {
+      for (let h = 0; h < r.hours; h++) {
+        if (!l.congested[h]) continue;
+        congested++;
+        if (Math.abs(l.flow[h] ?? 0) < l.capacityMw - 1e-6) below++;
+      }
+    }
+    expect(congested).toBeGreaterThan(1000);
+    expect(below).toBe(0); // was 178 link-hours
+  });
+
+  it('F2: a tight but plausible system has (almost) no wrong-way link-hours', () => {
+    for (const [seed, before] of [
+      [1, 101],
+      [2, 68],
+    ] as const) {
+      const w = mutated((raw) => {
+        const zones = (raw['zones'] as { zones: { id: string; demandTwh: [number, number][] }[] }).zones;
+        const de = zones.find((z) => z.id === 'DE');
+        if (de === undefined) throw new Error('no DE');
+        de.demandTwh = de.demandTwh.map(([y, v]) => [y, v * 1.2]);
+      }, seed);
+      const r = w.simulateYear(2024);
+      expect(r.wrongWayLinkHours, `seed ${seed} (was ${before})`).toBeLessThanOrEqual(1);
+    }
   });
 });

@@ -256,3 +256,181 @@ describe('coupling', () => {
     expect(e.wrongWayLinks).toBe(0);
   });
 });
+
+// Regressions for the 2026-10-04 stress test (findings F1, F2, F7, F11, F13, F16),
+// built from the report's reproductions.
+describe('stress-test findings', () => {
+  function chain(order: 'ab-first' | 'bc-first', demandB: number): { e: ClearingEngine; ab: number; bc: number } {
+    const e = engine(3);
+    const ab = { from: 0, to: 1, capacityMw: 100 };
+    const bc = { from: 1, to: 2, capacityMw: 1000 };
+    e.setLinks(order === 'ab-first' ? [ab, bc] : [bc, ab]);
+    e.beginHour();
+    e.demand[0] = 0;
+    e.demand[1] = demandB;
+    e.demand[2] = 500;
+    e.addBlock(0, 0, TRANCHE.NORMAL, 10, 1000);
+    e.addBlock(2, 1, TRANCHE.NORMAL, 100, 1000);
+    e.clear();
+    return order === 'ab-first' ? { e, ab: 0, bc: 1 } : { e, ab: 1, bc: 0 };
+  }
+
+  it('F1: a fixed link carries its full capacity when the importer passes the power on', () => {
+    for (const order of ['ab-first', 'bc-first'] as const) {
+      for (const demandB of [0, 30]) {
+        const { e, ab, bc } = chain(order, demandB);
+        expect(e.flow[ab], `${order}, B demand ${demandB}`).toBeCloseTo(100, 9);
+        expect(e.flow[bc], `${order}, B demand ${demandB}`).toBeCloseTo(100 - demandB, 9);
+        expect(e.congested[ab]).toBe(1);
+        expect([e.price[0], e.price[1], e.price[2]]).toEqual([10, 100, 100]);
+        expect(e.wrongWayLinks).toBe(0);
+      }
+    }
+  });
+
+  it('F1: imports for storage charging are not capped at firm demand', () => {
+    const e = engine(2);
+    e.setLinks([{ from: 0, to: 1, capacityMw: 100 }]);
+    e.beginHour();
+    e.demand[0] = 0;
+    e.demand[1] = 50;
+    e.addBlock(0, 0, TRANCHE.NORMAL, 10, 1000);
+    e.addBlock(1, 1, TRANCHE.NORMAL, 100, 1000);
+    e.addCharge(1, 10, 50, 200);
+    e.clear();
+    expect(e.flow[0]).toBeCloseTo(100, 9);
+    expect(e.cDisp[0]).toBeCloseTo(50, 9);
+    expect(e.price[0]).toBe(10);
+    expect(e.price[1]).toBe(50);
+    expect(e.wrongWayLinks).toBe(0);
+  });
+
+  it('F2: fixed exports do not make the exporter scarce', () => {
+    const e = engine(2, { reserve: 0.12 });
+    e.setLinks([{ from: 0, to: 1, capacityMw: 90 }]);
+    e.beginHour();
+    e.demand[0] = 100;
+    e.demand[1] = 100;
+    e.addBlock(0, 0, TRANCHE.NORMAL, 10, 200);
+    e.addBlock(1, 1, TRANCHE.NORMAL, 50, 150);
+    e.clear();
+    expect(e.price[0]).toBe(10); // was 539 €/MWh
+    expect(e.price[1]).toBe(50);
+    expect(e.flow[0]).toBeCloseTo(90, 9);
+    expect(e.scarcity[0]).toBe(0);
+    expect(e.wrongWayLinks).toBe(0);
+  });
+
+  it('F2: a zone short on its own imports at a scarcity price instead of exporting', () => {
+    // Zone 0 has 5 % spare against a 12 % reserve margin; zone 1 has plenty but dearer offers.
+    const e = engine(2, { reserve: 0.12 });
+    e.setLinks([{ from: 0, to: 1, capacityMw: 30 }]);
+    e.beginHour();
+    e.demand[0] = 1000;
+    e.demand[1] = 1000;
+    e.addBlock(0, 0, TRANCHE.NORMAL, 10, 1050);
+    e.addBlock(1, 1, TRANCHE.NORMAL, 50, 2000);
+    e.clear();
+    const s = (120 - (50 + 30)) / 120; // spare: own 50 + 30 MW the link can bring in
+    expect(e.scarcity[0]).toBeCloseTo(s, 12);
+    expect(e.price[0]).toBeCloseTo(10 + (CAP - 10) * s ** 3, 9);
+    expect(e.price[1]).toBe(50);
+    expect(e.flow[0]).toBeCloseTo(-30, 9); // zone 1 exports to the scarce zone
+    expect(e.wrongWayLinks).toBe(0);
+  });
+
+  it('F7: a zone with no demand and no offers is not priced at the cap', () => {
+    const e = engine(1);
+    e.demand[0] = 0;
+    e.clear();
+    expect(e.price[0]).toBe(0);
+    expect(e.unserved[0]).toBe(0);
+    const floored = engine(1);
+    floored.floor[0] = 5;
+    floored.clear();
+    expect(floored.price[0]).toBe(5);
+  });
+
+  it('F13: uncongested coupled zones share one price even with different floors', () => {
+    const e = engine(2);
+    e.floor[0] = 0; // no negative prices yet in zone 0
+    e.setLinks([{ from: 0, to: 1, capacityMw: 5000 }]);
+    e.beginHour();
+    e.demand[0] = 100;
+    e.demand[1] = 0;
+    e.addBlock(1, 0, TRANCHE.LEGACY_RENEWABLE, -30, 1000);
+    e.clear();
+    expect(e.linkFixed[0]).toBe(0);
+    expect(e.flow[0]).toBeCloseTo(-100, 9);
+    expect(e.price[0]).toBe(0); // was [0, −30]
+    expect(e.price[1]).toBe(0);
+    // Separated by congestion, the zone that allows it still goes negative.
+    const c = engine(2);
+    c.floor[0] = 0;
+    c.setLinks([{ from: 0, to: 1, capacityMw: 50 }]);
+    c.beginHour();
+    c.demand[0] = 100;
+    c.demand[1] = 0;
+    c.addBlock(0, 1, TRANCHE.NORMAL, 20, 1000);
+    c.addBlock(1, 0, TRANCHE.LEGACY_RENEWABLE, -30, 1000);
+    c.clear();
+    expect(c.flow[0]).toBeCloseTo(-50, 9);
+    expect(c.price[0]).toBe(20);
+    expect(c.price[1]).toBe(-30);
+    expect(c.congested[0]).toBe(1);
+  });
+
+  it('F16: a fixed link is reported congested only when the prices differ', () => {
+    const e = engine(2);
+    e.setLinks([{ from: 0, to: 1, capacityMw: 50 }]);
+    e.beginHour();
+    e.demand[0] = 0;
+    e.demand[1] = 200;
+    e.addBlock(0, 0, TRANCHE.NORMAL, 10, 1000);
+    e.addBlock(1, 1, TRANCHE.NORMAL, 10, 1000);
+    e.clear();
+    expect(e.linkFixed[0]).toBe(1);
+    expect(e.flow[0]).toBeCloseTo(50, 9);
+    expect(e.price[0]).toBe(e.price[1]);
+    expect(e.congested[0]).toBe(0);
+  });
+
+  it('F11: rejects NaN, infinite and out-of-range inputs with a clear error', () => {
+    const fresh = (): ClearingEngine => {
+      const e = engine(2);
+      e.setLinks([{ from: 0, to: 1, capacityMw: 100 }]);
+      e.beginHour();
+      e.demand[0] = 10;
+      e.demand[1] = 10;
+      return e;
+    };
+    expect(() => fresh().addBlock(0, 0, TRANCHE.NORMAL, NaN, 10)).toThrow(/bid must be finite/);
+    expect(() => fresh().addBlock(0, 0, TRANCHE.NORMAL, 10, Infinity)).toThrow(/size must be finite/);
+    expect(() => fresh().addBlock(0, 0, TRANCHE.NORMAL, 10, NaN)).toThrow(/size must be finite/);
+    expect(() => fresh().addBlock(0, 0, TRANCHE.NORMAL, 10, -5)).toThrow(/non-negative/);
+    expect(() => fresh().addBlock(2, 0, TRANCHE.NORMAL, 10, 5)).toThrow(/unknown zone/);
+    expect(() => fresh().addCharge(0, 9, NaN, 10)).toThrow(/willingness to pay must be finite/);
+    expect(() => fresh().addCharge(0, 9, 10, Infinity)).toThrow(/size must be finite/);
+    expect(() => engine(2).setLinks([{ from: 0, to: 1, capacityMw: NaN }])).toThrow(/capacity/);
+    expect(() => engine(2).setLinks([{ from: 0, to: 1, capacityMw: Infinity }])).toThrow(/capacity/);
+    expect(() => engine(2).setLinks([{ from: 0, to: 2, capacityMw: 100 }])).toThrow(/unknown zone/);
+    expect(() => engine(2).setLinks([{ from: 1, to: 1, capacityMw: 100 }])).toThrow(/itself/);
+    for (const [field, value, msg] of [
+      ['demand', NaN, /demand/],
+      ['demand', Infinity, /demand/],
+      ['demand', -1, /demand/],
+      ['cap', NaN, /floor and cap/],
+      ['floor', -Infinity, /floor and cap/],
+      ['reserveFraction', 10, /reserveFraction/],
+    ] as const) {
+      const e = fresh();
+      e[field][0] = value;
+      e.addBlock(0, 0, TRANCHE.NORMAL, 10, 100);
+      expect(() => e.clear(), `${field} = ${value}`).toThrow(msg);
+    }
+    // The order of a NaN bid no longer matters: it never gets in.
+    const e = fresh();
+    expect(() => e.addBlock(0, 0, TRANCHE.NORMAL, NaN, 10)).toThrow();
+    expect(e.nBlocks).toBe(0);
+  });
+});
