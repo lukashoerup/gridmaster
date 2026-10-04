@@ -183,6 +183,13 @@ revert is one click. Astra reviews stay optional and never block (workbench
 Scope: this repo only. Elsewhere — erhvervsklubben deploys from `main` —
 the workbench's own rules still apply.
 
+**Reaffirmed by Lukas, 2026-10-04:** "please merge PRs yourself going
+forward". Every session merges its own pull request when the conditions
+above hold, whether it builds, reviews or analyses, and never leaves one
+for Lukas to merge. The exceptions above still go to him in chat: a new
+dependency, a changed decision or pillar beyond recording his own answers,
+or money.
+
 D6–D12 were answered in chat on 2026-10-04: D6–D9 after the research
 summary, D10–D12 after the prototype design. Each time Lukas chose the
 recommended option as offered.
