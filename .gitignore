@@ -1,0 +1,25 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets never enter the repo
+.env
+.env.*
+
+# Python tooling (research scripts, data preprocessing)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node tooling (if the prototype stack is web-based)
+node_modules/
+dist/
+build/
+coverage/
+
+# Raw datasets are downloaded by scripts, never committed; only small,
+# preprocessed, licence-checked extracts belong in the repo.
+data/raw/
