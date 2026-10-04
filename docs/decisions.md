@@ -6,6 +6,35 @@ makes in chat are added here in the same session, with his words quoted.
 
 ## Decided
 
+D6–D9 were answered in chat on 2026-10-04, right after Lukas read the
+research summary; each was the recommended option, chosen as offered.
+
+### D9 — First-release scope as proposed (Lukas, 2026-10-04)
+Chose: "Yes, that size". The table in `docs/roadmap.md` ("First-release
+scope") is the scope: 10 zones, a 1990–2030 campaign plus sandbox, about 12
+technologies including three experimental bets (liquid-air storage,
+power-to-X, wave), three AI rivals, Windows and macOS. Everything else ships
+as updates. Changing the table needs Lukas.
+
+### D8 — Computers first; tablets reconsidered after launch (Lukas, 2026-10-04)
+Chose: "Computers first". Windows and macOS on Steam; the phone is for
+reviewing builds in a browser; no hover-only information, so a tablet
+version stays possible. Answers D4's open "maybe mobile".
+
+### D7 — Technology: TypeScript web stack (Lukas, 2026-10-04)
+Chose: "Yes, web technology". Approved now, for Phases 1–2: **TypeScript,
+Vite, Vitest, ECharts, fast-check**. Still needing their own approval when
+the time comes: PixiJS (only if the map needs it; plain SVG first),
+Electron and a Steam library (Phase 4, after a technical spike), and the
+preview host for phone links (Phase 1, terms checked first). Any other
+dependency still needs Lukas.
+
+### D6 — The vision is approved (Lukas, 2026-10-04)
+Chose: "Yes, go with it". `docs/vision.md` is the direction: the market
+fights back, history sets the difficulty, real weather drives computed
+prices. Its open design questions are for the design task; changing a
+pillar needs Lukas.
+
 ### D5 — Scope: realistic, without compromising quality or fun (Lukas, 2026-10-04)
 > "We also need to scope the game realistically so it is not too big of a task
 > to create, but we cannot compromise on quality and fun."
@@ -17,7 +46,7 @@ release, polished, grown afterwards; gates that test fun before content.
 > "I want it to be playable on macos and windows at some point. Maybe mobile if
 > we think it is better."
 
-Windows and macOS through Steam are requirements. Mobile: see Q3.
+Windows and macOS through Steam are requirements. Mobile: settled by D8.
 
 ### D3 — The name waits; "Gridmaster" is the internal working title (Lukas, 2026-10-04)
 > "Lets wait on the name for a while until we know what we want."
@@ -36,45 +65,9 @@ game: making it public later is one click; un-publishing is impossible.
 `docs/original-brief.md`.
 
 ## Open — waiting for Lukas
-Recommendations come from the 2026-10-04 research report
+Q1–Q4 were answered on 2026-10-04 and are D6–D9 above. The reasons behind
+each recommendation are in the research report
 (`docs/research/reports/Renewable energy tycoon game research.md`).
-
-### Q1 — Approve the direction (taste)
-`docs/vision.md`: the pillars, how it plays, and what it is not. The one idea
-everything rests on: prices come from a simulated market the player is part
-of, so the market "fights back" when everyone builds the same thing.
-
-### Q2 — Approve the technology (dependency rule)
-**Recommended: a TypeScript web stack**, packaged with Electron for Steam.
-Why: AI agents write and test it most reliably; it has the best charts and
-maps; every change can be played from a link on a phone; Windows and macOS
-come from the same code; Game Dev Tycoon, Bitburner and shapez shipped on
-Steam this way. Runner-up: Godot 4 with GDScript.
-
-Approval is staged so each step is a real decision:
-- **Now, for Phases 1–2:** TypeScript, Vite (build), Vitest (tests),
-  ECharts (charts), fast-check (property tests). All permissively licensed.
-- **Phase 2–3, if the map needs it:** PixiJS (otherwise plain SVG, no
-  dependency).
-- **Phase 4, after a technical spike:** Electron and a Steam library
-  (steamworks-ffi-node or a maintained steamworks.js fork) — the weakest
-  link of this stack, isolated behind one adapter so it can be swapped.
-- **Preview hosting** for phone links is decided with Phase 1 (check the
-  terms: free tiers of some hosts are for non-commercial use only).
-
-### Q3 — Mobile: computers first, tablets reassessed after the PC launch
-**Recommended: not a launch platform.** The buyer is a premium PC strategy
-player; the energy slot on mobile is held by a free game (Energy Manager);
-the main screens are dense charts and a map; separate stores and touch
-design would add scope that D5 rules out. The phone still matters now — as
-the browser where Lukas reviews every build. The interface avoids
-hover-only information, which keeps a tablet version possible.
-
-### Q4 — Approve the first-release scope
-`docs/roadmap.md`, "First-release scope": 10 zones, a 1990–2030 campaign,
-about 12 technologies including three experimental bets (liquid-air storage,
-power-to-X, wave), three AI rivals, Windows and macOS. Everything else as
-updates.
 
 ### Q5 — Network access for verification and data (access; can wait)
 This session's environment blocked most websites (Steam, Copernicus, ENTSO-E,

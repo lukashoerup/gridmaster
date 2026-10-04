@@ -1,7 +1,10 @@
 # Roadmap
 
-**Current phase: 0 — research and direction.** Research done 2026-10-04;
-waiting for Lukas on decisions Q1–Q5 in `docs/decisions.md`.
+**Current phase: 1 — market toy.** Phase 0 closed 2026-10-04: research done,
+direction, technology, platforms and first-release scope decided (D6–D9 in
+`docs/decisions.md`). Next up: the Phase 1 task and, in parallel, the design
+of the one-zone prototype. Open: Q5 (network access), needed for real data
+and the verification pass.
 
 ## The principle: find the fun before adding content
 Lukas's constraint (decision D5) is a realistic scope with no compromise on
@@ -19,13 +22,14 @@ proven on one zone before Europe is built.
 
 ## Phases
 
-### Phase 0 — Research and direction ← now
-- Done: research report, vision draft, this plan, first task files.
-- **Gate:** Lukas answers Q1–Q4. Q5 (network access) can follow.
-- Then: a verification pass on the report's unverified facts, in a session
-  with wider network access (`tasks/`).
+### Phase 0 — Research and direction ✓ (2026-10-04)
+- Done: research report, vision, this plan, first task files.
+- **Gate passed:** Lukas approved the vision, the TypeScript stack, computers
+  first and the first-release scope (D6–D9).
+- Still to run: a verification pass on the report's unverified facts, in a
+  session with wider network access (Q5; `tasks/`).
 
-### Phase 1 — Market toy: does the simulation feel real?
+### Phase 1 — Market toy: does the simulation feel real? ← now
 - **Build:** the headless simulation core — real weather-years, demand, and
   an hourly merit-order price for four zones (Denmark, Germany, Norway,
   Spain), 1995–2025 — plus a web page of charts to explore it from a link on
@@ -67,7 +71,7 @@ proven on one zone before Europe is built.
 The rest of Europe as map packs, the speculative 2030–2060 era, more
 scenarios, German first among translations, tablets reassessed.
 
-## First-release scope — proposal (decisions Q4)
+## First-release scope — approved (decision D9)
 | Area | First release | Later, as updates or DLC |
 |---|---|---|
 | Map | 10 zones with contrasting weather and markets: DK1, DK2, Germany, Netherlands, Belgium, France, Great Britain, Norway, Sweden, Spain | The full 30–40-zone Europe, as map packs |

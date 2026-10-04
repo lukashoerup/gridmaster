@@ -3,8 +3,8 @@ Model: opus
 # Task: design the one-zone prototype (Phase 2), on paper
 
 ## Status
-**Blocked** on decision Q1 (vision approved). Needs no code, so it can run
-in parallel with the Phase 1 market toy once Q1 is answered.
+**Ready.** The vision is approved (decision D6). Needs no code, so it runs in
+parallel with the Phase 1 market toy.
 
 ## Goal
 Turn `docs/vision.md` into a one-to-three-page design for the Phase 2

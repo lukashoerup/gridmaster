@@ -21,8 +21,9 @@ follow-up verification pass must check, in priority order"
          any title models wholesale prices, cannibalisation or storage;
       2. data licences — PECD 4.2/CDS wording, ENTSO-E re-use terms, the Global
          Solar Atlas addition, PVGIS/EMHIRES, Pink Sheet, DEA, Natural Earth;
-      3. stack facts for Q2 — Electron with the Steam overlay on macOS, Linux
-         and Deck; the state of steamworks-ffi-node and steamworks.js forks
+      3. stack facts for the Phase 4 approvals under D7 — Electron with the
+         Steam overlay on macOS, Linux and Deck; the state of
+         steamworks-ffi-node and steamworks.js forks
 - [ ] Each finding written back into the research notes with its new marker
       (`[fetched]` with the date), and contradictions flagged in the report
 - [ ] Every licence confirmed for a dataset the Phase 1 task will use gets its
